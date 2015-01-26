@@ -332,6 +332,7 @@
         AB_MultiTableViewCell* multiCell = (AB_MultiTableViewCell*)cell;
         multiCell.nib = nibs[section.sectionType];
         multiCell.emptyNib = emptyNibs[section.sectionType];
+        multiCell.retainInnerCellSize = section.retainMultiCellSize;
 
         NSArray* groupedArray = [multiCell groupArray:section.items.array groupSize:section.numCellsPerRow];
         
@@ -409,6 +410,7 @@
 @synthesize sectionType;
 @synthesize numCellsPerRow;
 @synthesize nextURL;
+@synthesize retainMultiCellSize;
 
 - (int) numRows
 {

@@ -26,6 +26,7 @@
 
 - (AB_Popup*) showPopup:(Class)popupClass;
 - (void) dismissPopup:(AB_Popup*)popup;
++ (UINib*) baseNib;
 
 @end
 

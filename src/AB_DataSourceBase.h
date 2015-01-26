@@ -17,6 +17,7 @@
 @property(strong) NSString* sectionType;
 @property(assign) int numCellsPerRow;
 @property(strong) NSURL* nextURL;
+@property(assign) BOOL retainMultiCellSize;
 
 - (int) numRows;
 

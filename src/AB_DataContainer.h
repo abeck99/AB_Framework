@@ -12,6 +12,7 @@
 @protocol AB_DataContainer <NSObject>
 
 - (void) setData:(id)setData;
+- (id) data;
 + (Class) expectedClass;
 
 - (void) setupWithFrame:(CGRect)frame;

@@ -18,6 +18,7 @@
 
 @property(strong) UINib* nib;
 @property(strong) UINib* emptyNib;
+@property(assign) BOOL retainInnerCellSize;
 
 - (NSArray*) groupArray:(NSArray*)inArray groupSize:(int)groupSize;
 

@@ -24,12 +24,7 @@ void printAllSubviews(UIView* view, int depth)
 
 UIFont* fontForPointSize(CGFloat pointSize)
 {
-    return [UIFont systemFontOfSize:pointSize];
-    if ( pointSize >= 25 )
-    {
-        return [UIFont fontWithName:@"Coolvetica" size:pointSize];
-    }
-    UIFont* font = [UIFont fontWithName:@"OpenSans" size:pointSize];
+    UIFont* font = [UIFont fontWithName:@"Asap-Regular" size:pointSize];
     return font;
 }
 

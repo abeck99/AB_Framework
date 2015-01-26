@@ -60,6 +60,7 @@
 
 - (void) setupWithFrame:(CGRect)frame
 {
+    self.view.autoresizesSubviews = YES;
     self.view.frame = frame;
 }
 
@@ -111,12 +112,12 @@
 
 - (void) pushOnParent:(NSString*)controllerName
 {
-    [self pushOnParent:controllerName withCompletion:nil];
+    [self pushOnParent:controllerName withConfigBlock:nil];
 }
 
-- (void) pushOnParent:(NSString*)controllerName withCompletion:(CreateControllerBlock)completionBlock
+- (void) pushOnParent:(NSString*)controllerName withConfigBlock:(CreateControllerBlock)configurationBlock
 {
-    [parent pushControllerWithName:controllerName withCompletion:completionBlock];
+    [parent pushControllerWithName:controllerName withConfigBlock:configurationBlock];
 }
 
 - (void) replaceOnParent:(NSString*)controllerName
@@ -144,14 +145,14 @@
     }
 }
 
-- (void) pushOnNavigationController:(id)controllerName withCompletion:(CreateControllerBlock)completionBlock
+- (void) pushOnNavigationController:(id)controllerName withConfigBlock:(CreateControllerBlock)configurationBlock
 {
-    [self pushOnNavigationController:controllerName withCompletion:completionBlock animated:YES];
+    [self pushOnNavigationController:controllerName withConfigBlock:configurationBlock animated:YES];
 }
 
-- (void) pushOnNavigationController:(id)controllerName withCompletion:(CreateControllerBlock)completionBlock animated:(BOOL)animated
+- (void) pushOnNavigationController:(id)controllerName withConfigBlock:(CreateControllerBlock)configurationBlock animated:(BOOL)animated
 {
-    [parent pushOnNavigationController:controllerName withCompletion:completionBlock animated:animated];
+    [parent pushOnNavigationController:controllerName withConfigBlock:configurationBlock animated:animated];
 }
 
 - (void) jumpToOrigin

@@ -28,6 +28,7 @@
 
 @synthesize nib;
 @synthesize emptyNib;
+@synthesize retainInnerCellSize;
 
 - (void) setData:(NSArray*)data
 {
@@ -94,11 +95,26 @@
     realContentView.frame = contentFrame;
     
     contentFrame.size.width /= _innerCells.count;
-    for ( UIView* cell in _innerCells )
+
+    if ( self.retainInnerCellSize )
     {
-        cell.frame = contentFrame;
-        contentFrame.origin.x += contentFrame.size.width;
-        [cell setNeedsLayout];
+        for ( UIView* cell in _innerCells )
+        {
+            CGRect cellFrame = cell.frame;
+            cellFrame.origin.x = contentFrame.origin.x + (contentFrame.size.width/2.f) - (cellFrame.size.width/2.f);
+            cell.frame = cellFrame;
+            contentFrame.origin.x += contentFrame.size.width;
+            [cell setNeedsLayout];
+        }
+    }
+    else
+    {
+        for ( UIView* cell in _innerCells )
+        {
+            cell.frame = contentFrame;
+            contentFrame.origin.x += contentFrame.size.width;
+            [cell setNeedsLayout];
+        }
     }
 }
 

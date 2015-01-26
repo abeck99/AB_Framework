@@ -105,7 +105,7 @@
 
 - (void) showLabel
 {
-    characterCountLabel.text = [NSString stringWithFormat:@"%d/%d", self.text.length, _maxCharacterCount];
+    characterCountLabel.text = [NSString stringWithFormat:@"%lu/%d", (unsigned long)self.text.length, _maxCharacterCount];
 }
 
 - (void)textViewDidChange:(UITextView *)textView

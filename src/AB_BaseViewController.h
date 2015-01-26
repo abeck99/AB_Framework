@@ -10,6 +10,7 @@
 
 #import "GAITrackedViewController.h"
 
+// Return relevant data
 typedef void (^CreateControllerBlock)(AB_Controller controller);
 typedef void (^ConfirmBlock)(BOOL confirmed);
 
@@ -38,11 +39,11 @@ typedef void (^ConfirmBlock)(BOOL confirmed);
 - (void) closeView;
 
 - (void) pushOnParent:(NSString*)controllerName;
-- (void) pushOnParent:(NSString*)controllerName withCompletion:(CreateControllerBlock)completionBlock;
+- (void) pushOnParent:(NSString*)controllerName withConfigBlock:(CreateControllerBlock)configurationBlock;
 - (void) replaceOnParent:(NSString*)controllerName;
 
-- (void) pushOnNavigationController:(id)controllerName withCompletion:(CreateControllerBlock)completionBlock;
-- (void) pushOnNavigationController:(id)controllerName withCompletion:(CreateControllerBlock)completionBlock animated:(BOOL)animated;
+- (void) pushOnNavigationController:(id)controllerName withConfigBlock:(CreateControllerBlock)configurationBlock;
+- (void) pushOnNavigationController:(id)controllerName withConfigBlock:(CreateControllerBlock)configurationBlock animated:(BOOL)animated;
 
 - (void) jumpToOrigin;
 - (void) jumpToElement:(UIView*)element;

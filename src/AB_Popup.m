@@ -17,6 +17,11 @@
     return nil;
 }
 
++ (void) load
+{
+    [[self class] baseNib];
+}
+
 - (void) setup
 {
     for ( UIView* view in roundedViews )
@@ -51,11 +56,6 @@
     }
     
     return self;
-}
-
-+ (void) load
-{
-    [[self class] baseNib];
 }
 
 - (IBAction) closeSelf:(id)sender

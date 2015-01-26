@@ -20,6 +20,8 @@
     id sectionSyncObject;
     
     IBOutlet UIImageView* triangleView;
+
+    NSArray* controllerDataStack;
 }
 
 - (id) initWithNibName:(NSString *)nibNameOrNil
@@ -33,17 +35,16 @@
 
 - (AB_Controller) currentController;
 
-- (void) pushController:(AB_Controller)newController;
-- (void) popController;
 - (void) popControllerAnimated:(BOOL)animated;
 - (void) replaceController:(AB_Controller)newController;
 - (void) forceReplaceControllerWithName:(id)controllerName;
 
-- (void) pushControllerWithName:(id)name;
-- (void) pushControllerWithName:(id)name withCompletion:(CreateControllerBlock)completionBlock;
+- (void) pushControllerWithName:(id)name withConfigBlock:(CreateControllerBlock)configurationBlock;
+- (void) popController;
+
 - (void) replaceControllerWithName:(id)name;
 
-- (int) numPushedViews;
+- (NSUInteger) numPushedViews;
 - (void) setHighlighted;
 - (void) controllerDidChange;
 

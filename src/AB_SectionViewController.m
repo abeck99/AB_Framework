@@ -8,6 +8,8 @@
 #import "AB_Controllers.h"
 #import "AB_WrappedViewController.h"
 
+#define MAX_BACK_MEMORY 200
+
 @interface AB_SectionViewController ()
 
 @end
@@ -40,6 +42,7 @@
 
 - (void) initData
 {
+    controllerDataStack = @[];
     contentControllers = [NSMutableArray arrayWithCapacity:1];
     controllerLoadQueue = [[NSOperationQueue alloc] init];
     sectionSyncObject = [[NSObject alloc] init];
@@ -72,7 +75,7 @@
                 return;
             }
             
-            NSNumber* controllerName = [NSNumber numberWithInt:button.tag];
+            NSNumber* controllerName = [NSNumber numberWithLong:button.tag];
             
             [self changeControllerName:controllerName forced:forced];
         }
@@ -102,7 +105,7 @@
     if ( forced )
     {
         [self forceReplaceControllerWithName:controllerName];
-        int currentTag = [getController() tagForController:[self currentController]];
+        NSInteger currentTag = [getController() tagForController:[self currentController]];
         [self setHighlightedWithTag:currentTag];
         currentlyLoading = nil;
     }
@@ -145,15 +148,6 @@
     [[self currentController] closeView];
 }
 
-- (void) pushController:(AB_Controller)newController
-{
-    [self cancelCurrentLoading];
-    [[self currentController] poppedAwayWhileStillOpen];
-    [contentControllers addObject:newController];
-    [[self currentController] openViewInView:contentView withParent:self];
-    [self controllerDidChange];
-}
-
 - (void) popController
 {
     [self popControllerAnimated:YES];
@@ -169,73 +163,34 @@
     [controllerLoadQueue cancelAllOperations];
 }
 
-- (void) pushControllerWithName:(id)name
+- (void) pushControllerWithName:(id)name withConfigBlock:(CreateControllerBlock)configurationBlock
 {
-    [self pushControllerWithName:name withCompletion:nil];
-}
+    AB_Controller sectionController = [getController() controllerForTag:name];
+    [sectionController setupWithFrame:self.contentView.bounds];
+    [self replaceController:sectionController];
+    
+    configurationBlock(sectionController);
 
-- (void) pushControllerWithName:(id)controllerName
-                 withCompletion:(CreateControllerBlock)completionBlock
-{
-    if ( currentlyLoading &&
-        [currentlyLoading class] == [controllerName class] &&
-        [controllerName compare:currentlyLoading] == NSOrderedSame )
+    NSMutableArray* newArray = [controllerDataStack mutableCopy];
+    [newArray addObject:@{
+                          @"tag": name,
+                          @"data": sectionController.data ? sectionController.data : [NSNull null],
+                          }];
+    
+    if ( newArray.count > MAX_BACK_MEMORY )
     {
-        return;
+        [newArray removeObjectAtIndex:0];
     }
     
-    currentlyLoading = controllerName;
-
-    NSBlockOperation* loadControllerOp = [[NSBlockOperation alloc] init];
-    __weak NSBlockOperation* weakLoadControllerOp = loadControllerOp;
-    
-    CGRect frame = self.contentView.frame;
-    frame.origin = CGPointZero;
-
-    [loadControllerOp addExecutionBlock:^{
-        __block AB_Controller sectionController = nil;
-        [[NSOperationQueue mainQueue] addOperationWithBlock:^{
-            sectionController = [getController() controllerForTag:controllerName];
-        }];
-        if ( [weakLoadControllerOp isCancelled] )
-        {
-            return;
-        }
-        
-        [[NSOperationQueue mainQueue] addOperationWithBlock:^{
-            [sectionController setupWithFrame:frame];
-        }];
-
-        if ( [weakLoadControllerOp isCancelled] )
-        {
-            return;
-        }
-
-        [[NSOperationQueue mainQueue] addOperationWithBlock:^{
-            if ( [weakLoadControllerOp isCancelled] )
-            {
-                return;
-            }
-            
-            currentlyLoading = nil;
-            
-        
-            [self pushController:sectionController];
-            if ( completionBlock )
-            {
-                completionBlock(sectionController);
-            }
-        }];
-    }];
-
-    [controllerLoadQueue addOperation:loadControllerOp];
+    controllerDataStack = [NSArray arrayWithArray:newArray];
 }
 
 - (void) forceReplaceControllerWithName:(id)controllerName
 {
-    CGRect frame = self.contentView.frame;
-    frame.origin = CGPointMake(0.f, 0.f);
+    CGRect frameTest = self.contentView.bounds;
+    NSLog(@"Bounds width: %g", frameTest.size.width);
     
+    CGRect frame = self.contentView.bounds;
     AB_Controller sectionController = [getController() controllerForTag:controllerName];
     [sectionController setupWithFrame:frame];
     [self replaceController:sectionController];
@@ -284,7 +239,7 @@
     [controllerLoadQueue addOperation:loadControllerOp];
 }
 
-- (void) pushOnNavigationController:(id)controllerName withCompletion:(CreateControllerBlock)completionBlock animated:(BOOL)animated
+- (void) pushOnNavigationController:(id)controllerName withConfigBlock:(CreateControllerBlock)configurationBlock animated:(BOOL)animated
 {
     if ( currentlyLoading &&
         [currentlyLoading class] == [controllerName class] &&
@@ -339,12 +294,13 @@
             [self poppedAwayWhileStillOpen];
             
             currentlyLoading = nil;
-            [self.navigationController pushViewController:wrappedController animated:animated];
             
-            if ( completionBlock )
+            if ( configurationBlock )
             {
-                completionBlock(newController);
+                configurationBlock(newController);
             }
+
+            [self.navigationController pushViewController:wrappedController animated:animated];
         }];
     }];
     
@@ -353,6 +309,26 @@
 
 - (void) popControllerAnimated:(BOOL)animated
 {
+    if ( controllerDataStack.count > 1 )
+    {
+        NSMutableArray* newArray = [controllerDataStack mutableCopy];
+        
+        [newArray removeLastObject];
+        NSDictionary* lastViewDict = [newArray lastObject];
+        [newArray removeLastObject];
+        controllerDataStack = [NSArray arrayWithArray:newArray];
+        
+        id viewData = lastViewDict[@"data"];
+        viewData = viewData == [NSNull null] ? nil : viewData;
+        
+        
+        [self pushOnNavigationController:lastViewDict[@"tag"]
+                         withConfigBlock:^(AB_Controller controller) {
+                             controller.data = viewData;
+                         }
+                                animated:animated];
+    }
+
     [[self currentController] closeView];
     [contentControllers removeLastObject];
     assert( [contentControllers count] > 0 );
@@ -435,7 +411,7 @@
     }
 }
 
-- (int) numPushedViews
+- (NSUInteger) numPushedViews
 {
     return contentControllers.count;
 }
