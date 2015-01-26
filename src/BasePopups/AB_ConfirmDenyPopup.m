@@ -10,12 +10,29 @@
 
 @implementation AB_ConfirmDenyPopup
 
-/*
-// Only override drawRect: if you perform custom drawing.
-// An empty implementation adversely affects performance during animation.
-- (void)drawRect:(CGRect)rect {
-    // Drawing code
+@synthesize confirmBlock;
+@synthesize denyBlock;
+
+- (IBAction) confirm:(id)sender
+{
+    [self closeSelf:sender];
+    if ( self.confirmBlock )
+    {
+        self.confirmBlock();
+    }
 }
-*/
+
+- (IBAction) deny:(id)sender
+{
+    [self closeSelf:sender];
+    if ( self.denyBlock )
+    {
+        self.denyBlock();
+    }
+}
+
+- (void) closeFromBackgroundTap:(id)sender
+{
+}
 
 @end

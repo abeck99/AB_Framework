@@ -10,4 +10,10 @@
 
 @interface AB_ConfirmDenyPopup : AB_Popup
 
+@property(strong) void (^confirmBlock)();
+@property(strong) void (^denyBlock)();
+
+- (IBAction) confirm:(id)sender;
+- (IBAction) deny:(id)sender;
+
 @end

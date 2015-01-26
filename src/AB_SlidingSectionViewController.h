@@ -9,5 +9,9 @@
 #import "AB_SectionViewController.h"
 
 @interface AB_SlidingSectionViewController : AB_SectionViewController
+{
+    IBOutlet UIView* sliderView;
+    IBOutlet UIView* allViews;
+}
 
 @end
