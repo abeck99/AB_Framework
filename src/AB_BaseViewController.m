@@ -132,6 +132,11 @@
 
 - (void) setData:(id)data
 {
+    if ( !data )
+    {
+        _data = data;
+    }
+    else
     if ( [data isKindOfClass:[[self class] expectedClass]] )
     {
         _data = data;

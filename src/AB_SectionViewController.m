@@ -28,6 +28,10 @@
         if ( defaultController )
         {
             [contentControllers addObject:defaultController];
+            controllerDataStack = @[@{
+                                        @"tag": defaultController.key,
+                                        @"data": [NSNull null],
+                                        }];
             [self controllerDidChange];
         }
     }
@@ -321,19 +325,13 @@
         id viewData = lastViewDict[@"data"];
         viewData = viewData == [NSNull null] ? nil : viewData;
         
-        
-        [self pushOnNavigationController:lastViewDict[@"tag"]
-                         withConfigBlock:^(AB_Controller controller) {
-                             controller.data = viewData;
-                         }
-                                animated:animated];
+        [[self currentController] closeView];
+        [self pushControllerWithName:lastViewDict[@"tag"]
+                     withConfigBlock:^(AB_Controller controller) {
+                         controller.data = viewData;
+                     }];
+        [self controllerDidChange];
     }
-
-    [[self currentController] closeView];
-    [contentControllers removeLastObject];
-    assert( [contentControllers count] > 0 );
-    [[self currentController] poppedBackWhileStillOpen];
-    [self controllerDidChange];
 }
 
 - (void) replaceController:(AB_Controller)newController
