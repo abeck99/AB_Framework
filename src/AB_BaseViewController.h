@@ -14,6 +14,7 @@
 typedef void (^CreateControllerBlock)(AB_Controller controller);
 typedef void (^ConfirmBlock)(BOOL confirmed);
 
+
 @interface AB_BaseViewController : GAITrackedViewController<AB_DataContainer>
 {
     BOOL isOpen;
