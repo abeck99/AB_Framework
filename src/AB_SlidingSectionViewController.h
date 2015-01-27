@@ -14,4 +14,6 @@
     IBOutlet UIView* allViews;
 }
 
+- (void) animateSliderOpen:(BOOL)open inTime:(CGFloat) animTime;
+
 @end
