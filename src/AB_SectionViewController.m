@@ -7,6 +7,7 @@
 #import "AB_SectionViewController.h"
 #import "AB_Controllers.h"
 #import "AB_WrappedViewController.h"
+#import "AB_TransitionContextObject.h"
 
 #define MAX_BACK_MEMORY 200
 
@@ -154,7 +155,7 @@
 
 - (void) popController
 {
-    [self popControllerAnimated:YES];
+    [self popControllerWithAnimation:nil];
 }
 
 - (void) dealloc
@@ -165,28 +166,81 @@
 - (void) cancelCurrentLoading
 {
     [controllerLoadQueue cancelAllOperations];
+    [currentTransitionObject cancelInteractiveTransition];
+    currentTransitionObject = nil;
 }
 
 - (void) pushControllerWithName:(id)name withConfigBlock:(CreateControllerBlock)configurationBlock
 {
+    [self pushControllerWithName:name withConfigBlock:configurationBlock withAnimation:nil];
+}
+
+    
+- (void) pushControllerWithName:(id)name withConfigBlock:(CreateControllerBlock)configurationBlock withAnimation:(id<UIViewControllerAnimatedTransitioning>)animation
+{
     AB_Controller sectionController = [getController() controllerForTag:name];
     [sectionController setupWithFrame:self.contentView.bounds];
-    [self replaceController:sectionController];
     
-    configurationBlock(sectionController);
-
-    NSMutableArray* newArray = [controllerDataStack mutableCopy];
-    [newArray addObject:@{
-                          @"tag": name,
-                          @"data": sectionController.data ? sectionController.data : [NSNull null],
-                          }];
-    
-    if ( newArray.count > MAX_BACK_MEMORY )
+    if ( animation )
     {
-        [newArray removeObjectAtIndex:0];
+        [self replaceController:sectionController withAnimation:animation completeBlock:^{
+            NSMutableArray* newArray = [controllerDataStack mutableCopy];
+            [newArray addObject:@{
+                                  @"tag": name,
+                                  @"data": sectionController.data ? sectionController.data : [NSNull null],
+                                  }];
+            
+            if ( newArray.count > MAX_BACK_MEMORY )
+            {
+                [newArray removeObjectAtIndex:0];
+            }
+            
+            controllerDataStack = [NSArray arrayWithArray:newArray];
+        }];
+
+        configurationBlock(sectionController);
     }
-    
-    controllerDataStack = [NSArray arrayWithArray:newArray];
+    else
+    {
+        [self replaceController:sectionController];
+
+        configurationBlock(sectionController);
+        
+        NSMutableArray* newArray = [controllerDataStack mutableCopy];
+        [newArray addObject:@{
+                              @"tag": name,
+                              @"data": sectionController.data ? sectionController.data : [NSNull null],
+                              }];
+        
+        if ( newArray.count > MAX_BACK_MEMORY )
+        {
+            [newArray removeObjectAtIndex:0];
+        }
+        
+        controllerDataStack = [NSArray arrayWithArray:newArray];
+    }
+}
+
+- (void) popControllerWithAnimation:(id<UIViewControllerAnimatedTransitioning>)animation
+{
+    if ( controllerDataStack.count > 1 )
+    {
+        NSMutableArray* newArray = [controllerDataStack mutableCopy];
+        
+        [newArray removeLastObject];
+        NSDictionary* lastViewDict = [newArray lastObject];
+        [newArray removeLastObject];
+        controllerDataStack = [NSArray arrayWithArray:newArray];
+        
+        id viewData = lastViewDict[@"data"];
+        viewData = viewData == [NSNull null] ? nil : viewData;
+        
+        [self pushControllerWithName:lastViewDict[@"tag"]
+                     withConfigBlock:^(AB_Controller controller) {
+                         controller.data = viewData;
+                     }
+                       withAnimation:animation];
+    }
 }
 
 - (void) forceReplaceControllerWithName:(id)controllerName
@@ -311,29 +365,6 @@
     [controllerLoadQueue addOperation:loadControllerOp];
 }
 
-- (void) popControllerAnimated:(BOOL)animated
-{
-    if ( controllerDataStack.count > 1 )
-    {
-        NSMutableArray* newArray = [controllerDataStack mutableCopy];
-        
-        [newArray removeLastObject];
-        NSDictionary* lastViewDict = [newArray lastObject];
-        [newArray removeLastObject];
-        controllerDataStack = [NSArray arrayWithArray:newArray];
-        
-        id viewData = lastViewDict[@"data"];
-        viewData = viewData == [NSNull null] ? nil : viewData;
-        
-        [[self currentController] closeView];
-        [self pushControllerWithName:lastViewDict[@"tag"]
-                     withConfigBlock:^(AB_Controller controller) {
-                         controller.data = viewData;
-                     }];
-        [self controllerDidChange];
-    }
-}
-
 - (void) replaceController:(AB_Controller)newController
 {
     [self cancelCurrentLoading];
@@ -346,6 +377,46 @@
     [[self currentController] openViewInView:contentView withParent:self];
     [self controllerDidChange];
 }
+
+- (void) replaceController:(AB_Controller)newController withAnimation:(id<UIViewControllerAnimatedTransitioning>)animation
+{
+    [self replaceController:newController withAnimation:animation completeBlock:nil];
+}
+
+- (void) replaceController:(AB_Controller)newController withAnimation:(id<UIViewControllerAnimatedTransitioning>)animation completeBlock:(void (^)())completeBlock
+{
+    [self cancelCurrentLoading];
+    
+    [newController openViewInView:nil withParent:self];
+    
+    AB_TransitionContextObject* transitionObject = nil;
+    
+    transitionObject = [[AB_TransitionContextObject alloc] initWithFromController:[self currentController]
+                                                                     toController:newController
+                                                                    inContentView:self.contentView
+                                                                    withAnimation:animation
+                                                                  withCancelBlock:^{
+                                                                                // TODO: Anything to do here?
+                                                                         }
+                                                                  withFinishBlock:^{
+                                                                     if ( [contentControllers count] > 0 )
+                                                                     {
+                                                                         [[self currentController] closeView];
+                                                                     }
+                                                                     [contentControllers removeAllObjects];
+                                                                     [contentControllers addObject:newController];
+                                                                      if ( currentTransitionObject == transitionObject )
+                                                                      {
+                                                                          currentTransitionObject = nil;
+                                                                      }
+                                                                      completeBlock();
+                                                                      [self controllerDidChange];
+                                                                         }];
+    
+    currentTransitionObject = transitionObject;
+    [animation animateTransition:currentTransitionObject];
+}
+
 
 - (void) setupFromData
 {

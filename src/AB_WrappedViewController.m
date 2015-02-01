@@ -14,13 +14,28 @@
 
 @synthesize lastSectionController;
 
-- (void) popControllerAnimated:(BOOL)animated
+- (void) popControllerWithAnimation:(id<UIViewControllerAnimatedTransitioning>)animation
 {
-    [[self currentController] closeView];
-    contentControllers = nil;
-    [self.navigationController popViewControllerAnimated:animated];
-    [[self.lastSectionController currentController] poppedBackWhileStillOpen];
+    // TODO: implement with animation controllers
+    [NSException raise:NSInternalInconsistencyException format:@"Navigation controller popping not supported with new animation system yet!"];
+
+//    [[self currentController] closeView];
+//    contentControllers = nil;
+//    [self.navigationController popViewControllerAnimated:animated];
+//    [[self.lastSectionController currentController] poppedBackWhileStillOpen];
 }
+
+//- (id<UIViewControllerAnimatedTransitioning>)navigationController:
+//(UINavigationController *)navigationController
+//                                  animationControllerForOperation:(UINavigationControllerOperation)operation
+//                                               fromViewController:(UIViewController *)fromVC
+//                                                 toViewController:(UIViewController *)toVC {
+//    
+//    // reverse the animation for 'pop' transitions
+//    _animationController.reverse = operation == UINavigationControllerOperationPop;
+//    
+//    return _animationController;
+//}
 
 - (void)openViewInView:(UIView *)insideView withParent:(AB_SectionViewController*)setParent
 {
