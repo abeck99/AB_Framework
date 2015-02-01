@@ -154,6 +154,18 @@
     }
 }
 
+- (void) setAlphaOnAllWidgets:(CGFloat)alpha
+{
+    for ( AB_Widget* widget in [self allWidgetsWithPos:TopWidget] )
+    {
+        widget.alpha = alpha;
+    }
+    for ( AB_Widget* widget in [self allWidgetsWithPos:BottomWidget] )
+    {
+        widget.alpha = alpha;
+    }
+}
+
 - (void) arrangeAllWidgets
 {
     [self arrangeWidgetsWithPos:TopWidget];

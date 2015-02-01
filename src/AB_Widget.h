@@ -41,6 +41,8 @@ typedef enum AB_WidgetPos
 - (void) arrangeAllWidgets;
 - (void) centerView:(UIView*)view;
 
+- (void) setAlphaOnAllWidgets:(CGFloat)alpha;
+
 @end
 
 
