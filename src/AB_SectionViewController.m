@@ -387,8 +387,6 @@
 {
     [self cancelCurrentLoading];
     
-    [newController openViewInView:nil withParent:self];
-    
     AB_TransitionContextObject* transitionObject = nil;
     
     transitionObject = [[AB_TransitionContextObject alloc] initWithFromController:[self currentController]
@@ -404,12 +402,16 @@
                                                                          [[self currentController] closeView];
                                                                      }
                                                                      [contentControllers removeAllObjects];
+                                                                     [newController openViewInView:nil withParent:self];
                                                                      [contentControllers addObject:newController];
                                                                       if ( currentTransitionObject == transitionObject )
                                                                       {
                                                                           currentTransitionObject = nil;
                                                                       }
-                                                                      completeBlock();
+                                                                      if ( completeBlock )
+                                                                      {
+                                                                          completeBlock();
+                                                                      }
                                                                       [self controllerDidChange];
                                                                          }];
     
