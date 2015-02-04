@@ -45,7 +45,11 @@
 
         if ( [obj isKindOfClass:[AB_EmptyDataPlaceholder class]] )
         {
-            if ( emptyCellIndex < emptyCells.count )
+            if ( !self.emptyNib )
+            {
+                [newInnerCells addObject:[NSNull null]];
+            }
+            else if ( emptyCellIndex < emptyCells.count )
             {
                 cell = emptyCells[emptyCellIndex];
             }
@@ -100,6 +104,11 @@
     {
         for ( UIView* cell in _innerCells )
         {
+            if ( cell == (id) [NSNull null] )
+            {
+                continue;
+            }
+
             CGRect cellFrame = cell.frame;
             cellFrame.origin.x = contentFrame.origin.x + (contentFrame.size.width/2.f) - (cellFrame.size.width/2.f);
             cell.frame = cellFrame;
@@ -111,6 +120,11 @@
     {
         for ( UIView* cell in _innerCells )
         {
+            if ( cell == (id) [NSNull null] )
+            {
+                continue;
+            }
+
             cell.frame = contentFrame;
             contentFrame.origin.x += contentFrame.size.width;
             [cell setNeedsLayout];
@@ -147,7 +161,7 @@
     [self cleanViews];
 }
 
-- (NSArray*) groupArray:(NSArray*)inArray groupSize:(int)groupSize
+- (NSArray*) groupArray:(NSArray*)inArray groupSize:(int)groupSize enforceSize:(BOOL)enforceSize
 {
     NSMutableArray* outArray = [@[] mutableCopy];
     
@@ -161,7 +175,7 @@
             {
                 [groupedArray addObject:obj];
             }
-            else if (self.emptyNib )
+            else if (enforceSize)
             {
                 [groupedArray addObject:[[AB_EmptyDataPlaceholder alloc] init]];
             }

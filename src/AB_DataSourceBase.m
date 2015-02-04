@@ -334,7 +334,7 @@
         multiCell.emptyNib = emptyNibs[section.sectionType];
         multiCell.retainInnerCellSize = section.retainMultiCellSize;
 
-        NSArray* groupedArray = [multiCell groupArray:section.items.array groupSize:section.numCellsPerRow];
+        NSArray* groupedArray = [multiCell groupArray:section.items.array groupSize:section.numCellsPerRow enforceSize:section.equalSizeColumns];
         
         [multiCell setData:groupedArray[row]];
         
@@ -411,6 +411,7 @@
 @synthesize numCellsPerRow;
 @synthesize nextURL;
 @synthesize retainMultiCellSize;
+@synthesize equalSizeColumns;
 
 - (int) numRows
 {

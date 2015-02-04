@@ -18,6 +18,7 @@
 @property(assign) int numCellsPerRow;
 @property(strong) NSURL* nextURL;
 @property(assign) BOOL retainMultiCellSize;
+@property(assign) BOOL equalSizeColumns;
 
 - (int) numRows;
 
