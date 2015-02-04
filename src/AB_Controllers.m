@@ -29,6 +29,8 @@
  */
         controllers = [self getControllers];
         [self loadNibs];
+        
+        [[UITableViewCell appearance] setBackgroundColor:[UIColor clearColor]];
     }
     
     return self;

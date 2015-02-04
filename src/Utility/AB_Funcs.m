@@ -15,7 +15,11 @@ void printAllSubviews(UIView* view, int depth)
     }
     
     NSLog(@"%@%@", tabs, view);
-    
+
+    CGFloat r,g,b,a;
+    [view.backgroundColor getRed:&r green:&g blue:&b alpha:&a];
+    NSLog(@"%@BGColor: %g, %g, %g, %g, %@", tabs, r, g, b, a, view.opaque ? @"Opaque" : @"Transparent");
+
     for ( UIView* subview in view.subviews )
     {
         printAllSubviews(subview, depth+1);
