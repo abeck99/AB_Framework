@@ -394,7 +394,8 @@
                                                                     inContentView:self.contentView
                                                                     withAnimation:animation
                                                                   withCancelBlock:^{
-                                                                                // TODO: Anything to do here?
+                                                                      // Ensure animation really removed the view
+                                                                      [newController.view removeFromSuperview];
                                                                          }
                                                                   withFinishBlock:^{
                                                                      if ( [contentControllers count] > 0 )
