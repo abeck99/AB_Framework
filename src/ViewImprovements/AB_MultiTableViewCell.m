@@ -47,7 +47,7 @@
         {
             if ( !self.emptyNib )
             {
-                [newInnerCells addObject:[NSNull null]];
+                cell = [NSNull null];
             }
             else if ( emptyCellIndex < emptyCells.count )
             {
