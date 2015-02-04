@@ -30,6 +30,11 @@
 @synthesize emptyNib;
 @synthesize retainInnerCellSize;
 
+- (BOOL) isValidObject:(id)obj
+{
+    return obj != [NSNull null];
+}
+
 - (void) setData:(NSArray*)data
 {
     [self cleanViews];
@@ -47,7 +52,7 @@
         {
             if ( !self.emptyNib )
             {
-                cell = [NSNull null];
+                cell = (UIView*) [NSNull null];
             }
             else if ( emptyCellIndex < emptyCells.count )
             {
@@ -82,7 +87,10 @@
             validCellIndex++;
         }
         
-        [realContentView addSubview:cell];
+        if ( [self isValidObject:cell] )
+        {
+            [realContentView addSubview:cell];
+        }
         [newInnerCells addObject:cell];
     }
     
@@ -104,7 +112,7 @@
     {
         for ( UIView* cell in _innerCells )
         {
-            if ( cell == (id) [NSNull null] )
+            if ( ![self isValidObject:cell] )
             {
                 continue;
             }
@@ -120,7 +128,7 @@
     {
         for ( UIView* cell in _innerCells )
         {
-            if ( cell == (id) [NSNull null] )
+            if ( ![self isValidObject:cell] )
             {
                 continue;
             }
