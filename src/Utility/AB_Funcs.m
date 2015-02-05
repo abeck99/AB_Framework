@@ -37,38 +37,26 @@ void searchForFonts(UIView* view)
     if ( [view isKindOfClass:[UILabel class]] )
     {
         UILabel* label = (UILabel*)view;
-        if ( !label.tag != 1000 )
-        {
-            label.font = fontForPointSize(label.font.pointSize);
-        }
+        applyFontToLabel(label);
     }
     else if ( [view isKindOfClass:[UIButton class]] )
     {
         UIButton* button = (UIButton*)view;
         UILabel* label = button.titleLabel;
-        if ( !label.tag != 1000 )
-        {
-            label.font = fontForPointSize(label.font.pointSize);
-        }
+        applyFontToLabel(label);
     }
     else if ( [view isKindOfClass:[UITextView class]] )
     {
         UITextView* textView = (UITextView*)view;
         
-        if ( !textView.tag != 1000 )
-        {
-            textView.editable = YES;
-            textView.font = fontForPointSize(textView.font.pointSize);
-            textView.editable = NO;
-        }
+        textView.editable = YES;
+        applyFontToTextView(textView);
+        textView.editable = NO;
     }
     else if ( [view isKindOfClass:[UITextField class]] )
     {
         UITextField* textField = (UITextField*)view;
-        if ( !textField.tag != 1000 )
-        {
-            textField.font = fontForPointSize(textField.font.pointSize);
-        }
+        applyFontToTextField(textField);
     }
     
     for ( UIView* subview in view.subviews )
