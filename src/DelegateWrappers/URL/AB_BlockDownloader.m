@@ -70,7 +70,10 @@
 
 - (void)connection:(NSURLConnection *)connection didFailWithError:(NSError *)error
 {
-    failure(error);
+    if ( self.failure )
+    {
+        self.failure(error);
+    }
     failError = error;
     [self cleanup];
 }
@@ -78,19 +81,28 @@
 - (void)connection:(NSURLConnection *)connection didReceiveResponse:(NSURLResponse *)response
 {
     expectedLength = response.expectedContentLength;
-    self.progress(0, expectedLength);
+    if ( self.progress )
+    {
+        self.progress(0, expectedLength);
+    }
     downloadedData = [NSMutableData data];
 }
 
 - (void)connection:(NSURLConnection *)connection didReceiveData:(NSData *)data
 {
     [downloadedData appendData:data];
-    self.progress(downloadedData.length, expectedLength);
+    if ( self.progress )
+    {
+        self.progress(downloadedData.length, expectedLength);
+    }
 }
 
 - (void)connectionDidFinishLoading:(NSURLConnection *)connection
 {
-    self.success(downloadedData);
+    if ( self.success )
+    {
+        self.success(downloadedData);
+    }
     [self cleanup];
 }
 
