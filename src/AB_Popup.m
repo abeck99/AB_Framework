@@ -30,12 +30,6 @@
     }
 }
 
-- (void) awakeFromNib
-{
-    [super awakeFromNib];
-    [self setup];
-}
-
 - (id) init
 {
     self = [super initWithFrame:CGRectMake(0,0,10,10)];
@@ -52,7 +46,6 @@
         
         id view = [arrayOfViews objectAtIndex: 0];
         self = view;
-        [self setup];
     }
     
     return self;
@@ -111,6 +104,8 @@
         newPopup.alpha = 1.f;
         blockingView.alpha = 1.f;
     }];
+    
+    [newPopup setup];
     
     return newPopup;
 }
