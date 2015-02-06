@@ -86,7 +86,7 @@
 {
     if ( didComplete )
     {
-        completeBlock();
+        completeBlock(self);
     }
     else
     {

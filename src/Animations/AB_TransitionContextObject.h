@@ -10,8 +10,10 @@
 #import <UIKit/UIKit.h>
 #import "AB_BaseViewController.h"
 
+@class AB_TransitionContextObject;
+
 typedef void (^TransitionCancelledBlock)();
-typedef void (^TransitionCompleteBlock)();
+typedef void (^TransitionCompleteBlock)(AB_TransitionContextObject* contextObject);
 
 @interface AB_TransitionContextObject : NSObject<UIViewControllerContextTransitioning>
 {

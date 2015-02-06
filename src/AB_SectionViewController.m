@@ -397,7 +397,7 @@
                                                                       // Ensure animation really removed the view
                                                                       [newController.view removeFromSuperview];
                                                                          }
-                                                                  withFinishBlock:^{
+                                                                  withFinishBlock:^(AB_TransitionContextObject* contextObject){
                                                                      if ( [contentControllers count] > 0 )
                                                                      {
                                                                          [[self currentController] closeView];
@@ -405,7 +405,7 @@
                                                                      [contentControllers removeAllObjects];
                                                                      [newController openViewInView:nil withParent:self];
                                                                      [contentControllers addObject:newController];
-                                                                      if ( currentTransitionObject == transitionObject )
+                                                                      if ( currentTransitionObject == contextObject )
                                                                       {
                                                                           currentTransitionObject = nil;
                                                                       }
