@@ -26,12 +26,6 @@ void printAllSubviews(UIView* view, int depth)
     }
 }
 
-UIFont* fontForPointSize(CGFloat pointSize)
-{
-    UIFont* font = [UIFont fontWithName:@"Asap-Regular" size:pointSize];
-    return font;
-}
-
 void searchForFonts(UIView* view)
 {
     if ( [view isKindOfClass:[UILabel class]] )
