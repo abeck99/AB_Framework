@@ -9,12 +9,16 @@
 
 @interface AB_Popup : UIView
 {
+    IBOutletCollection(UITextView) NSArray* expandableTextViews;
     IBOutletCollection(UIView) NSArray* roundedViews;
 }
+
++ (instancetype) get;
 
 - (IBAction) closeSelf:(id)sender;
 - (void) setup;
 - (void) closeFromBackgroundTap:(id)sender;
+- (BOOL) allowMultipleOpens;
 
 @property(weak) AB_BaseViewController* viewController;
 @property(weak) UIView* blockingView;
@@ -26,7 +30,6 @@
 
 - (AB_Popup*) showPopup:(Class)popupClass;
 - (void) dismissPopup:(AB_Popup*)popup;
-+ (UINib*) baseNib;
 
 @end
 

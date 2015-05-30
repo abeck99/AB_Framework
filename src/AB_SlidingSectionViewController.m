@@ -33,9 +33,6 @@
     allViews.frame = allViewsFrame;
     
     [self animateSliderOpen:NO inTime:0.f];
-
-    searchForFonts(self.view);
-    searchForFonts(allViews);
 }
 
 - (void) swipeLeft:(UISwipeGestureRecognizer*)swipe

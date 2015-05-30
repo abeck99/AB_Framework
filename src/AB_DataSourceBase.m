@@ -306,7 +306,6 @@
             UINib* nib = nibs[section.sectionType];
             cell = [nib instantiateWithOwner:nil options:@{}][0];
             [cell setValue:section.sectionType forKey:@"reuseIdentifier"];
-            searchForFonts(cell);
         }
         
         // You may be wondering why I'm doing it this way.

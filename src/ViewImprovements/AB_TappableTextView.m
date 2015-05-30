@@ -75,6 +75,7 @@
 - (void) textViewDidBeginEditing:(UITextView*)textView
 {
     tapGesture.enabled = NO;
+    emptyTextView.hidden = YES;
     
     if ( [realDelegate respondsToSelector:_cmd] )
     {
@@ -85,6 +86,7 @@
 - (void) textViewDidEndEditing:(UITextView*)textView
 {
     tapGesture.enabled = NO;
+    emptyTextView.hidden = textView.text.length != 0;
     
     if ( [realDelegate respondsToSelector:_cmd] )
     {
@@ -105,7 +107,7 @@
 
 - (void) showLabel
 {
-    characterCountLabel.text = [NSString stringWithFormat:@"%lu/%d", (unsigned long)self.text.length, _maxCharacterCount];
+    characterCountLabel.text = [NSString stringWithFormat:@"%d/%d", self.text.length, _maxCharacterCount];
 }
 
 - (void)textViewDidChange:(UITextView *)textView

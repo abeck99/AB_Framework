@@ -101,7 +101,7 @@
     }
     retController.key = key;
     
-    [nib instantiateWithOwner:retController options:nil];
+    [nib instantiateWithOwner:retController options:@{}];
     
     if ( !retController.view )
     {

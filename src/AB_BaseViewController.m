@@ -40,12 +40,6 @@
         [view.layer insertSublayer:gradient atIndex:0];
     }
     
-    searchForFonts(self.view);
-    for ( UIView* view in fontViews )
-    {
-        searchForFonts(view);
-    }
-    
     for ( UIView* view in rotatedViews )
     {
         CGRect originalFrame = view.frame;
@@ -60,7 +54,6 @@
 
 - (void) setupWithFrame:(CGRect)frame
 {
-    self.view.autoresizesSubviews = YES;
     self.view.frame = frame;
 }
 
@@ -246,6 +239,16 @@
         [self jumpToElement:element];
     }
     [parent rootJumpToElement:element];
+}
+
+- (void) resetScrollViewContentSizes
+{
+    for ( int i = 0; i < scrollViews.count; ++i )
+    {
+        UIScrollView* scrollView = [scrollViews objectAtIndex:i];
+        UIView* contentView = [scrollContentViews objectAtIndex:i];
+        scrollView.contentSize = contentView.frame.size;
+    }
 }
 
 - (void) setupScrollViews

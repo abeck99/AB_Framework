@@ -21,11 +21,22 @@
 
 - (id) initWithNibName:(NSString *)nibNameOrNil
                 bundle:(NSBundle *)nibBundleOrNil
-     defaultController:(AB_Controller)defaultController
 {
     if ( self = [super initWithNibName:nibNameOrNil bundle:nibBundleOrNil] )
     {
         [self initData];
+        [self controllerDidChange];
+    }
+    
+    return self;
+}
+
+- (id) initWithNibName:(NSString *)nibNameOrNil
+                bundle:(NSBundle *)nibBundleOrNil
+     defaultController:(AB_Controller)defaultController
+{
+    if ( self = [self initWithNibName:nibNameOrNil bundle:nibBundleOrNil] )
+    {
         if ( defaultController )
         {
             [contentControllers addObject:defaultController];
@@ -116,7 +127,7 @@
     }
     else
     {
-        [self replaceControllerWithName:controllerName];
+        [self pushControllerWithName:controllerName];
         if ( [controllerName isKindOfClass:[NSNumber class]] )
         {
             [self setHighlightedWithTag:[controllerName intValue]];
@@ -126,7 +137,9 @@
 
 - (AB_Controller) currentController
 {
-    return (AB_Controller) [contentControllers lastObject];
+    return contentControllers.count > 0
+        ? (AB_Controller) [contentControllers lastObject]
+        : nil;
 }
 
 - (void) setupWithFrame:(CGRect)frame
@@ -170,6 +183,16 @@
     currentTransitionObject = nil;
 }
 
+- (void) pushControllerWithName:(id)name
+{
+    [self pushControllerWithName:name withConfigBlock:nil withAnimation:nil];
+}
+
+- (void) pushControllerWithName:(id)name withAnimation:(id<UIViewControllerAnimatedTransitioning>)animation
+{
+    [self pushControllerWithName:name withConfigBlock:nil withAnimation:animation];
+}
+
 - (void) pushControllerWithName:(id)name withConfigBlock:(CreateControllerBlock)configurationBlock
 {
     [self pushControllerWithName:name withConfigBlock:configurationBlock withAnimation:nil];
@@ -198,13 +221,19 @@
             controllerDataStack = [NSArray arrayWithArray:newArray];
         }];
 
-        configurationBlock(sectionController);
+        if (configurationBlock)
+        {
+            configurationBlock(sectionController);
+        }
     }
     else
     {
         [self replaceController:sectionController];
 
-        configurationBlock(sectionController);
+        if (configurationBlock)
+        {
+            configurationBlock(sectionController);
+        }
         
         NSMutableArray* newArray = [controllerDataStack mutableCopy];
         [newArray addObject:@{
@@ -252,49 +281,6 @@
     AB_Controller sectionController = [getController() controllerForTag:controllerName];
     [sectionController setupWithFrame:frame];
     [self replaceController:sectionController];
-}
-
-- (void) replaceControllerWithName:(id)controllerName
-{
-    NSBlockOperation* loadControllerOp = [[NSBlockOperation alloc] init];
-    __weak NSBlockOperation* weakLoadControllerOp = loadControllerOp;
-    
-    CGRect frame = self.contentView.frame;
-    frame.origin = CGPointMake(0.f, 0.f);
-    
-    [loadControllerOp addExecutionBlock:^{
-        __block AB_Controller sectionController = nil;
-        [[NSOperationQueue mainQueue] addOperationWithBlock:^{
-            sectionController = [getController() controllerForTag:controllerName];
-        }];
-
-        if ( [weakLoadControllerOp isCancelled] )
-        {
-            return;
-        }
-
-        [[NSOperationQueue mainQueue] addOperationWithBlock:^{
-            [sectionController setupWithFrame:frame];
-        }];
-    
-        if ( [weakLoadControllerOp isCancelled] )
-        {
-            return;
-        }
-        
-        [[NSOperationQueue mainQueue] addOperationWithBlock:^{
-            if ( [weakLoadControllerOp isCancelled] )
-            {
-                return;
-            }
-            
-            currentlyLoading = nil;
-        
-            [self replaceController:sectionController];
-        }];
-    }];
-    
-    [controllerLoadQueue addOperation:loadControllerOp];
 }
 
 - (void) pushOnNavigationController:(id)controllerName withConfigBlock:(CreateControllerBlock)configurationBlock animated:(BOOL)animated

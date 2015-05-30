@@ -11,6 +11,7 @@
 @interface AB_TappableTextView : UITextView<UITextViewDelegate>
 {
     IBOutlet UILabel* characterCountLabel;
+    IBOutlet UIView* emptyTextView;
 }
 
 @property(assign) int maxCharacterCount;

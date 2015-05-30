@@ -10,10 +10,8 @@
 
 #import "GAITrackedViewController.h"
 
-// Return relevant data
 typedef void (^CreateControllerBlock)(AB_Controller controller);
 typedef void (^ConfirmBlock)(BOOL confirmed);
-
 
 @interface AB_BaseViewController : GAITrackedViewController<AB_DataContainer>
 {
@@ -22,7 +20,6 @@ typedef void (^ConfirmBlock)(BOOL confirmed);
     IBOutletCollection(UIView) NSArray* roundedViews;
     IBOutletCollection(UIView) NSArray* circleViews;
     IBOutletCollection(UIView) NSArray* gradientViews;
-    IBOutletCollection(UIView) NSArray* fontViews;
     IBOutletCollection(UIView) NSArray* rotatedViews;
     
     IBOutletCollection(UIScrollView) NSArray* scrollViews;
@@ -63,6 +60,8 @@ typedef void (^ConfirmBlock)(BOOL confirmed);
 - (IBAction) debugLayout:(id)sender;
 
 - (void) allowChangeController:(ConfirmBlock)confirmBlock;
+
+- (void) resetScrollViewContentSizes;
 
 @property(readonly) BOOL isOpen;
 @property(strong) id data;

@@ -37,19 +37,12 @@
 
 - (AB_Controller) currentController;
 
-- (void) forceReplaceControllerWithName:(id)controllerName;
-
-
-- (void) replaceController:(AB_Controller)newController;
-- (void) replaceController:(AB_Controller)newController withAnimation:(id<UIViewControllerAnimatedTransitioning>)animation;
-- (void) replaceController:(AB_Controller)newController withAnimation:(id<UIViewControllerAnimatedTransitioning>)animation completeBlock:(void (^)())completeBlock;
-
+- (void) pushControllerWithName:(id)name;
+- (void) pushControllerWithName:(id)name withAnimation:(id<UIViewControllerAnimatedTransitioning>)animation;
 - (void) pushControllerWithName:(id)name withConfigBlock:(CreateControllerBlock)configurationBlock;
 - (void) pushControllerWithName:(id)name withConfigBlock:(CreateControllerBlock)configurationBlock withAnimation:(id<UIViewControllerAnimatedTransitioning>)animation;
 - (void) popController;
 - (void) popControllerWithAnimation:(id<UIViewControllerAnimatedTransitioning>)animation;
-
-- (void) replaceControllerWithName:(id)name;
 
 - (NSUInteger) numPushedViews;
 - (void) setHighlighted;

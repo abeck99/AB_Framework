@@ -12,9 +12,3 @@
 
 
 void printAllSubviews(UIView* view, int depth);
-UIFont* fontForPointSize(CGFloat pointSize);
-void applyFontToLabel(UILabel* label);
-void applyFontToButton(UIButton* button);
-void applyFontToTextView(UITextView* textView);
-void applyFontToTextField(UITextField* textField);
-void searchForFonts(UIView* view);
