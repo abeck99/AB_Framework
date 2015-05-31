@@ -8,7 +8,7 @@
 
 #import <Foundation/Foundation.h>
 
-typedef void (^NotificationEventBlock)(id object, NSDictionary* notificationInfo);
+typedef void (^NotificationEventBlock)(NSDictionary* notificationInfo);
 
 // Note: This object allows you to use blocks for notification center events
 //      It's very easy to create a circular reference when doing this, so either use a weak self reference

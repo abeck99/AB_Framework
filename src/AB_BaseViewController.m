@@ -113,11 +113,6 @@
     [parent pushControllerWithName:controllerName withConfigBlock:configurationBlock];
 }
 
-- (void) replaceOnParent:(NSString*)controllerName
-{
-    [parent replaceControllerWithName:controllerName];
-}
-
 - (id) data
 {
     return _data;

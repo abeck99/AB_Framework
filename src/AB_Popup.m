@@ -75,6 +75,8 @@ static void* textUpdateContext = &textUpdateContext;
 
 - (void) sizeExpandableTextView:(UITextView*)expandableText
 {
+    BOOL originallySelected = expandableText.selectable;
+    expandableText.selectable = YES;
     CGFloat dif = 0.f;
     
     NSMutableParagraphStyle* paragraphStyle = [[NSMutableParagraphStyle alloc] init];
@@ -113,6 +115,7 @@ static void* textUpdateContext = &textUpdateContext;
                                                                     attributes:stringAttributes];
     
     
+    expandableText.selectable = originallySelected;
     [self animateToCenter];
 }
 

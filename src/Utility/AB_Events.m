@@ -52,8 +52,8 @@
 
         [[NSNotificationCenter defaultCenter] addObserver:self
                                                  selector:@selector(doTheNotification:)
-                                                     name:notificationName
-                                                   object:object];
+                                                     name:_notificationName
+                                                   object:_object];
         
         
     }
@@ -65,7 +65,7 @@
 {
     if (self.event)
     {
-        self.event(notif.object, notif.userInfo);
+        self.event(notif.userInfo);
     }
 }
 
