@@ -38,7 +38,6 @@ typedef void (^ConfirmBlock)(BOOL confirmed);
 
 - (void) pushOnParent:(NSString*)controllerName;
 - (void) pushOnParent:(NSString*)controllerName withConfigBlock:(CreateControllerBlock)configurationBlock;
-- (void) replaceOnParent:(NSString*)controllerName;
 
 - (void) pushOnNavigationController:(id)controllerName withConfigBlock:(CreateControllerBlock)configurationBlock;
 - (void) pushOnNavigationController:(id)controllerName withConfigBlock:(CreateControllerBlock)configurationBlock animated:(BOOL)animated;
