@@ -7,8 +7,6 @@
 //
 
 #import "AB_ReactiveArray.h"
-#import "EA_BaseModel.h"
-#import "EA_ActiveJob.h"
 
 @interface AB_ReactiveArray()
 {
@@ -66,29 +64,6 @@
 
 - (id) currentValue
 {
-    // TODO: Remove this hack
-    if ([currentValue_ isKindOfClass:[EA_ActiveJob class]])
-    {
-        EA_ActiveJob* activeJob = currentValue_;
-        if (![activeJob.jobModel shouldShow])
-        {
-            currentValue_ = nil;
-        }
-    }
-    
-    if (currentValue_ == nil
-        && self.array.count > 0
-        && [self.array[0] isKindOfClass:[EA_ActiveJob class]])
-    {
-        currentValue_ = Underscore.array(self.array)
-        .filter(^BOOL(EA_ActiveJob* activeJob)
-                {
-                    return [activeJob.jobModel shouldShow];
-                })
-        .first;
-    }
-        
-    
     if (currentValue_ == nil)
     {
         currentValue_ = self.array.count == 0
