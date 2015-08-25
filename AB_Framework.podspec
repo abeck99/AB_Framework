@@ -19,4 +19,6 @@ Pod::Spec.new do |s|
 	s.homepage = 'https://github.com/abeck99/AB_Framework'
 	s.dependency 'ReactiveCocoa'
 	s.dependency 'Mantle'
+
+	s.ios.deployment_target = '8.0'
 end
