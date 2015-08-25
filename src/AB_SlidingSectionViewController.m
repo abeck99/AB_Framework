@@ -14,9 +14,13 @@
 
 @implementation AB_SlidingSectionViewController
 
-- (void) openViewInView:(UIView *)insideView withParent:(AB_SectionViewController *)setParent
+- (void) openInView:(UIView*)insideView
+     withViewParent:(AB_BaseViewController*)viewParent_
+          inSection:(AB_SectionViewController*)sectionParent_
 {
-    [super openViewInView:insideView withParent:setParent];
+    [super openInView:insideView
+       withViewParent:viewParent_
+            inSection:sectionParent_];
     
     UISwipeGestureRecognizer* swipeLeft = [[UISwipeGestureRecognizer alloc] initWithTarget:self action:@selector(swipeLeft:)];
     swipeLeft.direction = UISwipeGestureRecognizerDirectionLeft;

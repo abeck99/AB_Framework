@@ -8,6 +8,9 @@
 #import <UIKit/UIKit.h>
 
 @class AB_SectionViewController;
+@class AB_BaseViewController;
+
+typedef void (^ConfirmBlock)(BOOL confirmed);
 
 @protocol AB_DataContainer <NSObject>
 
@@ -16,12 +19,23 @@
 + (Class) expectedClass;
 
 - (void) setupWithFrame:(CGRect)frame;
-- (void) openViewInView:(UIView*)insideView withParent:(AB_SectionViewController*)setParent;
+- (void) openInView:(UIView*)insideView
+     withViewParent:(AB_BaseViewController*)viewParent_
+          inSection:(AB_SectionViewController*)sectionParent_;
 - (void) closeView;
 
 - (void) attemptToReopen;
+
+// TODO: Get rid of this stupid stuff
 - (void) poppedAwayWhileStillOpen;
 - (void) poppedBackWhileStillOpen;
+
+// TODO: Add popped away
+- (void) poppedBack;
+
+- (NSDictionary*) getDescription;
+- (void) applyDescription:(NSDictionary*)dictionary;
+- (void) allowChangeController:(ConfirmBlock)confirmBlock;
 
 @property(strong) id key;
 

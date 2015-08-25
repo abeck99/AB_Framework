@@ -8,6 +8,7 @@
 #import "AB_Controllers.h"
 #import "AB_WrappedViewController.h"
 #import "AB_TransitionContextObject.h"
+#import "AB_SelectControllerButton.h"
 
 #define MAX_BACK_MEMORY 200
 
@@ -40,10 +41,7 @@
         if ( defaultController )
         {
             [contentControllers addObject:defaultController];
-            controllerDataStack = @[@{
-                                        @"tag": defaultController.key,
-                                        @"data": [NSNull null],
-                                        }];
+            controllerDataStack = @[[defaultController getDescription]];
             [self controllerDidChange];
         }
     }
@@ -56,83 +54,68 @@
     [self initData];
 }
 
+- (void) recursivelyFindButtons:(UIView*)view
+             andAddToDictionary:(NSMutableDictionary*)mutableSectionButtons
+{
+    if ([view isKindOfClass:[AB_SelectControllerButton class]])
+    {
+        AB_SelectControllerButton* button = (AB_SelectControllerButton*)view;
+        [button addTarget:self
+                   action:@selector(magicButtonSelect:)
+         forControlEvents:UIControlEventTouchUpInside];
+        
+        NSArray* currentButtons = [mutableSectionButtons objectForKey:button.controllerName];
+        NSMutableArray* newButtons = currentButtons ? [currentButtons mutableCopy] : [@[] mutableCopy];
+        [newButtons addObject:button];
+        mutableSectionButtons[button.controllerName] = [NSArray arrayWithArray:newButtons];
+    }
+    
+    for (UIView* subview in view.subviews)
+    {
+        [self recursivelyFindButtons:subview andAddToDictionary:mutableSectionButtons];
+    }
+}
+
+- (void) showMagicButtonsIfSelected
+{
+    NSString* currentControllerName = [self currentController].key;
+    
+    for (NSString* buttonKey in [sectionButtons allKeys])
+    {
+        NSArray* selectButtons = sectionButtons[buttonKey];
+        
+        for (AB_SelectControllerButton* selectButton in selectButtons)
+        {
+            [selectButton
+             setIsSelected:[currentControllerName
+                            isEqualToString:selectButton.controllerName]];
+        }
+    }
+}
+
+- (void) magicButtonSelect:(AB_SelectControllerButton*)button
+{
+    if ([button.controllerName isEqual:[self currentController].key])
+    {
+        [[self currentController] attemptToReopen];
+        return;
+    }
+    
+    [self pushControllerWithName:button.controllerName withConfigBlock:^(AB_Controller c)
+     {
+         if (button.forwardData)
+         {
+             c.data = self.data;
+         }
+     }];
+}
+
 - (void) initData
 {
     controllerDataStack = @[];
     contentControllers = [NSMutableArray arrayWithCapacity:1];
     controllerLoadQueue = [[NSOperationQueue alloc] init];
     sectionSyncObject = [[NSObject alloc] init];
-}
-
-- (IBAction) changeController:(id)sender
-{
-    [self changeController:sender forced:NO];
-}
-
-- (IBAction) changeControllerForced:(id)sender
-{
-    [self changeController:sender forced:YES];
-}
-
-- (IBAction) changeController:(id)sender forced:(BOOL)forced
-{
-    UIButton* button = (UIButton*) sender;
-    
-    AB_Controller currentController = [self currentController];
-    
-    
-    ConfirmBlock confirmBlock = ^(BOOL confirmed){
-        if ( confirmed )
-        {
-            NSInteger currentTag = [getController() tagForController:[self currentController]];
-            if ( currentTag == button.tag )
-            {
-                [[self currentController] attemptToReopen];
-                return;
-            }
-            
-            NSNumber* controllerName = [NSNumber numberWithLong:button.tag];
-            
-            [self changeControllerName:controllerName forced:forced];
-        }
-    };
-    
-    if ( currentController && [currentController isKindOfClass:[AB_BaseViewController class]] )
-    {
-        [(AB_BaseViewController*) currentController allowChangeController:confirmBlock];
-    }
-    else
-    {
-        confirmBlock(YES);
-    }
-}
-
-- (void) changeControllerName:(id)controllerName forced:(BOOL)forced
-{
-    if ( currentlyLoading &&
-        [currentlyLoading class] == [controllerName class] &&
-        [controllerName compare:currentlyLoading] == NSOrderedSame )
-    {
-        return;
-    }
-    
-    currentlyLoading = controllerName;
-    
-    if ( forced )
-    {
-        [self forceReplaceControllerWithName:controllerName];
-        NSInteger currentTag = [getController() tagForController:[self currentController]];
-        [self setHighlightedWithTag:currentTag];
-        currentlyLoading = nil;
-    }
-    else
-    {
-        [self pushControllerWithName:controllerName];
-        if ( [controllerName isKindOfClass:[NSNumber class]] )
-        {
-            [self setHighlightedWithTag:[controllerName intValue]];
-        }
-    }
 }
 
 - (AB_Controller) currentController
@@ -149,13 +132,21 @@
     CGRect contentFrame = contentView.frame;
     contentFrame.origin = CGPointMake(0.f, 0.f);
     [[self currentController] setupWithFrame:contentFrame];
+
+    NSMutableDictionary* mutableSectionButtons = [@{} mutableCopy];
+    [self recursivelyFindButtons:self.view andAddToDictionary:mutableSectionButtons];
+    sectionButtons = [NSDictionary dictionaryWithDictionary:mutableSectionButtons];
+    
+    [self showMagicButtonsIfSelected];
 }
 
-- (void) openViewInView:(UIView*)insideView withParent:(AB_SectionViewController*)setParent
+- (void) openInView:(UIView*)insideView
+     withViewParent:(AB_BaseViewController*)viewParent_
+          inSection:(AB_SectionViewController*)sectionParent_;
 {
     [self cancelCurrentLoading];
-    [super openViewInView:insideView withParent:setParent];
-    [[self currentController] openViewInView:contentView withParent:self];
+    [super openInView:insideView withViewParent:viewParent_ inSection:sectionParent_];
+    [[self currentController] openInView:contentView withViewParent:self inSection:self];
     [self setHighlighted];
 }
 
@@ -198,20 +189,66 @@
     [self pushControllerWithName:name withConfigBlock:configurationBlock withAnimation:nil];
 }
 
-    
 - (void) pushControllerWithName:(id)name withConfigBlock:(CreateControllerBlock)configurationBlock withAnimation:(id<UIViewControllerAnimatedTransitioning>)animation
 {
-    AB_Controller sectionController = [getController() controllerForTag:name];
-    [sectionController setupWithFrame:self.contentView.bounds];
-    
-    if ( animation )
+    ConfirmBlock switchBlock = ^(BOOL confirmed)
     {
-        [self replaceController:sectionController withAnimation:animation completeBlock:^{
+        if (!confirmed)
+        {
+            return;
+        }
+        
+        NSDictionary* lastDescription = [[self currentController] getDescription];
+        
+        AB_Controller sectionController = [getController() controllerForTag:name];
+        [sectionController setupWithFrame:self.contentView.bounds];
+        
+        if ( animation )
+        {
+            [self replaceController:sectionController withAnimation:animation completeBlock:^{
+                NSMutableArray* newArray = [controllerDataStack mutableCopy];
+                
+                // TODO: This flow can be improved instead of adding to the stack on entry and exit, it makes sense to push on the stack on exit, so the most up to date data is sent
+                if (lastDescription)
+                {
+                    [newArray removeLastObject];
+                    [newArray addObject:lastDescription];
+                }
+                
+                [newArray addObject:[sectionController getDescription]];
+                
+                if ( newArray.count > MAX_BACK_MEMORY )
+                {
+                    [newArray removeObjectAtIndex:0];
+                }
+                
+                controllerDataStack = [NSArray arrayWithArray:newArray];
+            }];
+            
+            if (configurationBlock)
+            {
+                configurationBlock(sectionController);
+            }
+        }
+        else
+        {
+            [self replaceController:sectionController];
+            
+            if (configurationBlock)
+            {
+                configurationBlock(sectionController);
+            }
+            
             NSMutableArray* newArray = [controllerDataStack mutableCopy];
-            [newArray addObject:@{
-                                  @"tag": name,
-                                  @"data": sectionController.data ? sectionController.data : [NSNull null],
-                                  }];
+            
+            // TODO: Copy/paste from above...
+            if (lastDescription)
+            {
+                [newArray removeLastObject];
+                [newArray addObject:lastDescription];
+            }
+            
+            [newArray addObject:[sectionController getDescription]];
             
             if ( newArray.count > MAX_BACK_MEMORY )
             {
@@ -219,34 +256,17 @@
             }
             
             controllerDataStack = [NSArray arrayWithArray:newArray];
-        }];
-
-        if (configurationBlock)
-        {
-            configurationBlock(sectionController);
         }
+    };
+    
+    AB_Controller currentController = [self currentController];
+    if (currentController)
+    {
+        [currentController allowChangeController:switchBlock];
     }
     else
     {
-        [self replaceController:sectionController];
-
-        if (configurationBlock)
-        {
-            configurationBlock(sectionController);
-        }
-        
-        NSMutableArray* newArray = [controllerDataStack mutableCopy];
-        [newArray addObject:@{
-                              @"tag": name,
-                              @"data": sectionController.data ? sectionController.data : [NSNull null],
-                              }];
-        
-        if ( newArray.count > MAX_BACK_MEMORY )
-        {
-            [newArray removeObjectAtIndex:0];
-        }
-        
-        controllerDataStack = [NSArray arrayWithArray:newArray];
+        switchBlock(YES);
     }
 }
 
@@ -261,12 +281,10 @@
         [newArray removeLastObject];
         controllerDataStack = [NSArray arrayWithArray:newArray];
         
-        id viewData = lastViewDict[@"data"];
-        viewData = viewData == [NSNull null] ? nil : viewData;
-        
         [self pushControllerWithName:lastViewDict[@"tag"]
                      withConfigBlock:^(AB_Controller controller) {
-                         controller.data = viewData;
+                         [controller applyDescription:lastViewDict];
+                         [controller poppedBack];
                      }
                        withAnimation:animation];
     }
@@ -360,7 +378,9 @@
     }
     [contentControllers removeAllObjects];
     [contentControllers addObject:newController];
-    [[self currentController] openViewInView:contentView withParent:self];
+    [[self currentController] openInView:contentView
+                          withViewParent:self
+                               inSection:self];
     [self controllerDidChange];
 }
 
@@ -389,8 +409,10 @@
                                                                          [[self currentController] closeView];
                                                                      }
                                                                      [contentControllers removeAllObjects];
-                                                                     [newController openViewInView:nil withParent:self];
-                                                                     [contentControllers addObject:newController];
+                                                                      [contentControllers addObject:newController];
+                                                                      [newController openInView:nil
+                                                                                 withViewParent:self
+                                                                                      inSection:self];
                                                                       if ( currentTransitionObject == contextObject )
                                                                       {
                                                                           currentTransitionObject = nil;
@@ -404,13 +426,6 @@
     
     currentTransitionObject = transitionObject;
     [animation animateTransition:currentTransitionObject];
-}
-
-
-- (void) setupFromData
-{
-    [super setupFromData];
-    [self currentController].data = self.data;
 }
 
 - (void) viewWillAppear:(BOOL)animated
@@ -476,17 +491,7 @@
 
 - (void) controllerDidChange
 {
-    
-}
-
-- (void) requestFullScreen
-{
-    [parent requestFullScreen];
-}
-
-- (void) requestEmbeddedScreen
-{
-    [parent requestEmbeddedScreen];
+    [self showMagicButtonsIfSelected];
 }
 
 - (void) poppedAwayWhileStillOpen
@@ -497,6 +502,55 @@
 - (void) poppedBackWhileStillOpen
 {
     [[self currentController] poppedBackWhileStillOpen];
+}
+
+- (NSDictionary*) getDescription
+{
+    // TODO: Do dict namespacing or something so it's easy to add functionality to this serialization
+
+    NSMutableDictionary* description = [[super getDescription] mutableCopy];
+    
+    
+    NSDictionary* currentChildDescription = [[self currentController] getDescription];
+    NSMutableArray* newArray = [controllerDataStack mutableCopy];
+    
+    // TODO: Copy/paste, need a "update data stack..."
+    if (currentChildDescription)
+    {
+        [newArray removeLastObject];
+        [newArray addObject:currentChildDescription];
+    }
+    
+    description[@"controllerDataStack"] = newArray;
+    
+    return [NSDictionary dictionaryWithDictionary:description];
+}
+
+- (void) applyDescription:(NSDictionary*)dictionary
+{
+    [super applyDescription:dictionary];
+
+    // TODO: this will load things twice... the default from the controller definition, then the actual one...
+    NSArray* previousControllerDataStack = dictionary[@"controllerDataStack"];
+    
+    if (previousControllerDataStack.count > 0)
+    {
+        NSDictionary* childDescription = [previousControllerDataStack lastObject];
+        
+        
+        // TODO: copy/pasteish
+        NSMutableArray* newArray = [previousControllerDataStack mutableCopy];
+        
+        [newArray removeLastObject];
+        controllerDataStack = [NSArray arrayWithArray:newArray];
+        
+        // TODO: Check that the order of execution here won't cause weird shit to happen
+        [self pushControllerWithName:childDescription[@"tag"]
+                     withConfigBlock:^(AB_Controller controller) {
+                         [controller applyDescription:childDescription];
+                         [controller poppedBack];
+        }];
+    }
 }
 
 @end

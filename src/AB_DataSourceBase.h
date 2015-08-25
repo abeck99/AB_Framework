@@ -7,6 +7,7 @@
 #import <Foundation/Foundation.h>
 #import "AB_FilteredArray.h"
 #import <UIKit/UIKit.h>
+#import <ReactiveCocoa.h>
 
 @interface AB_SectionInfo : NSObject
 
@@ -76,9 +77,11 @@
 
 - (id) getAsyncCheckObject;
 - (BOOL) testAsyncCheckObject:(id)object;
+- (CGFloat) expectedHeight;
 
 @property(strong) IBOutlet UIActivityIndicatorView* spinny;
 @property(strong) IBOutlet UILabel* emptyLabel;
 @property(readonly) IBOutlet UITableView* tableView;
+@property(readonly) RACSignal* updateSignal;
 
 @end

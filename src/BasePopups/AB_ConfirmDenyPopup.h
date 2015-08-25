@@ -12,8 +12,10 @@
 
 @property(strong) void (^confirmBlock)();
 @property(strong) void (^denyBlock)();
+@property(strong) void (^cancelBlock)();
 
 - (IBAction) confirm:(id)sender;
 - (IBAction) deny:(id)sender;
+- (IBAction) cancel:(id)sender;
 
 @end

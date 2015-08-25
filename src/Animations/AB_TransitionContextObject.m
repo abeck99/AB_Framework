@@ -94,20 +94,28 @@
     }
 }
 
+- (NSDictionary*) viewControllerByKeyDict
+{
+    NSMutableDictionary* viewControllerDict = [@{} mutableCopy];
+    if (toController)
+    {
+        viewControllerDict[UITransitionContextToViewControllerKey] = toController;
+    }
+    if (fromController)
+    {
+        viewControllerDict[UITransitionContextFromViewControllerKey] = fromController;
+    }
+    return [NSDictionary dictionaryWithDictionary:viewControllerDict];
+}
+
 - (UIViewController *)viewControllerForKey:(NSString *)key
 {
-    return [@{
-             UITransitionContextToViewControllerKey: toController,
-             UITransitionContextFromViewControllerKey: fromController,
-             } objectForKey:key];
+    return [[self viewControllerByKeyDict] objectForKey:key];
 }
 
 - (UIView *)viewForKey:(NSString *)key
 {
-    return [@{
-             UITransitionContextFromViewKey: fromController.view,
-             UITransitionContextToViewKey: toController.view,
-             } objectForKey:key];
+    return ((UIViewController*) [[self viewControllerByKeyDict] objectForKey:key]).view;
 }
 
 - (CGAffineTransform)targetTransform

@@ -6,30 +6,71 @@
 
 #import <UIKit/UIKit.h>
 #import "AB_BaseViewController.h"
+#import <ReactiveCocoa.h>
+#import "Underscore.h"
 
+@class AB_Popup;
+
+typedef enum RevealDirection
+{
+    Bottom = 0,
+    Top,
+    Left,
+    Right,
+    None
+} RevealDirection;
+
+typedef enum PopupState
+{
+    PopupState_Pending = 0,
+    PopupState_ReturningToPending,
+    PopupState_Opening,
+    PopupState_Opened,
+    PopupState_Closing,
+    PopupState_Closed
+} PopupState;
+
+// TODO: Unit test
 @interface AB_Popup : UIView
 {
     IBOutletCollection(UITextView) NSArray* expandableTextViews;
     IBOutletCollection(UIView) NSArray* roundedViews;
+    
+    UIView* blockingView;
 }
 
 + (instancetype) get;
 
 - (IBAction) closeSelf:(id)sender;
+- (void) close;
 - (void) setup;
 - (void) closeFromBackgroundTap:(id)sender;
-- (BOOL) allowMultipleOpens;
+- (void) recalculateDestination;
+- (BOOL) isOverlayPopup;
+- (int) popupPriority;
+- (CGFloat) animationSpeed;
 
-@property(weak) AB_BaseViewController* viewController;
-@property(weak) UIView* blockingView;
+@property(weak) UIViewController* viewController;
+@property(strong) IBInspectable UIColor* blockingViewColor;
+@property(assign) IBInspectable int revealDirection;
+
+@property(readonly) RACSignal* stateSignal;
 
 @end
 
+@interface UIView(PopupExtension)
+
+- (USArrayWrapper*) popups;
+
+@end
 
 @interface UIViewController (PopupExtension)
 
 - (AB_Popup*) showPopup:(Class)popupClass;
-- (void) dismissPopup:(AB_Popup*)popup;
+- (void) closeAllPopups;
+- (void) closeAllPopupsOfType:(Class)popupClass;
+- (void) closeAllPopupsExcept:(NSArray*)popupClasses;
+- (void) closeAllPopupsOfTypes:(NSArray*)popupClasses;
 
 @end
 

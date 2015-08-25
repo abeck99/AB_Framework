@@ -53,7 +53,7 @@
     return @[];
 }
 
-- (void) expandScrollContentTo:(int)size
+- (void) expandScrollContentTo:(NSUInteger)size
 {
     size = MAX(1, size);
     
@@ -73,7 +73,9 @@
     newPageFrame.origin.x = index * scrollView.bounds.size.width;
     
     [page setupWithFrame:newPageFrame];
-    [page openViewInView:scrollContent withParent:self];
+    [page openInView:scrollContent
+      withViewParent:self
+           inSection:self];
     
     page.data = data;
     
@@ -112,7 +114,7 @@
     [self showButtons];
 }
 
-- (void) goToPage:(int)pageNum
+- (void) goToPage:(NSUInteger)pageNum
 {
     [scrollView setContentOffset:CGPointMake(scrollView.bounds.size.width * pageNum, 0.f) animated:YES];
     [self showButtonsForPage:pageNum];
@@ -120,7 +122,7 @@
 
 - (IBAction) goLeft:(id)sender
 {
-    int pageNum = [self pageNum];
+    NSUInteger pageNum = [self pageNum];
     if ( pageNum > 0 )
     {
         [self goToPage:pageNum - 1];
@@ -129,7 +131,7 @@
 
 - (IBAction) goRight:(id)sender
 {
-    int pageNum = [self pageNum];
+    NSUInteger pageNum = [self pageNum];
     if ( pageNum < controllers.count - 1 )
     {
         [self goToPage:pageNum + 1];

@@ -10,6 +10,14 @@
 #import "AB_MultiTableViewCell.h"
 #import "AB_ClassExtensions.h"
 
+@interface AB_DataSourceBase()
+{
+    RACSubject* updateSubject;
+}
+
+@end
+
+
 @implementation AB_DataSourceBase
 
 @synthesize spinny;
@@ -48,10 +56,13 @@
 {
     [self clearSections];
     [tableView reloadData];
+    [updateSubject sendNext:@YES];
 }
 
 - (void) setupWithTableView:(UITableView*)theTableView
 {
+    updateSubject = [RACSubject subject];
+    
     tableView = theTableView;
     nibs = @{};
     emptyNibs = @{};
@@ -77,6 +88,7 @@
 {
     [tableView reloadData];
     [self scrollViewDidScroll:tableView];
+    [updateSubject sendNext:@YES];
 }
 
 - (void) scrollViewDidScroll:(UIScrollView *)scrollView
@@ -267,6 +279,11 @@
     return 12.f;
 }
 
+- (CGFloat)tableView:(UITableView *)tableView heightForFooterInSection:(NSInteger)section
+{
+    return 0.f;
+}
+
 - (void) setupCell:(UIView*)cell withData:(id)data dataIndexPath:(NSIndexPath*)indexPath
 {
     
@@ -387,6 +404,32 @@
 {
     return object == asyncCheckObject;
 }
+
+- (RACSignal*) updateSignal
+{
+    return updateSubject;
+}
+
+- (CGFloat) expectedHeight
+{
+    CGFloat height = 0;
+
+    for (NSInteger sectionNum=0; sectionNum<sections.count; ++sectionNum)
+    {
+        height += [self tableView:self.tableView heightForHeaderInSection:sectionNum];
+
+        AB_SectionInfo* section = sections[sectionNum];
+        for (NSInteger rowNum=0; rowNum<section.items.array.count; ++rowNum)
+        {
+            NSIndexPath* indexPath = [NSIndexPath indexPathForRow:rowNum inSection:sectionNum];
+            height += [self tableView:self.tableView heightForRowAtIndexPath:indexPath];
+        }
+        height += [self tableView:self.tableView heightForFooterInSection:sectionNum];
+    }
+    
+    return height;
+}
+
 
 @end
 

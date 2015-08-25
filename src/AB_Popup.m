@@ -5,13 +5,20 @@
 //
 
 #import "AB_Popup.h"
+#import <Underscore.h>
 
-static void* textUpdateContext = &textUpdateContext;
+#define POPUP_DEBUG 0
+
+@interface AB_Popup()
+{
+}
+@property(assign) PopupState popupState;
+
+@end
 
 @implementation AB_Popup
 
 @synthesize viewController;
-@synthesize blockingView;
 
 // Overrides
 + (UINib*) baseNib
@@ -26,51 +33,6 @@ static void* textUpdateContext = &textUpdateContext;
 
 - (void) setup
 {
-    for ( UIView* view in roundedViews )
-    {
-        view.layer.cornerRadius = 10.f;
-    }
-    
-    for (UITextView* textView in expandableTextViews)
-    {
-        [textView addObserver:self
-                   forKeyPath:@"text"
-                      options:NSKeyValueObservingOptionNew|NSKeyValueObservingOptionOld
-                      context:textUpdateContext];
-        
-        [self sizeExpandableTextView:textView];
-    }
-}
-
-- (void) dealloc
-{
-    [self closeExpandableViews];
-}
-
-- (void) closeExpandableViews
-{
-    for (UITextView* textView in expandableTextViews)
-    {
-        [textView removeObserver:self
-                      forKeyPath:@"text"
-                         context:textUpdateContext];
-    }
-    
-    expandableTextViews = @[];
-}
-
-- (void)observeValueForKeyPath:(NSString *)keyPath ofObject:(id)object
-                        change:(NSDictionary *)change context:(void *)context
-{
-    if (textUpdateContext == context)
-    {
-        UITextView* textView = (UITextView*) object;
-        [self sizeExpandableTextView:textView];
-    }
-    else
-    {
-        [super observeValueForKeyPath:keyPath ofObject:object change:change context:context];
-    }
 }
 
 - (void) sizeExpandableTextView:(UITextView*)expandableText
@@ -109,36 +71,58 @@ static void* textUpdateContext = &textUpdateContext;
         dif = expandableTextFrame.size.height - oldExpandableSize;
     }
 
-    [self recursivelyAdjustView:expandableText by:dif];
+    RecursivelyAdjustView(self, expandableText, dif);
     
     expandableText.attributedText = [[NSAttributedString alloc] initWithString:contentString
                                                                     attributes:stringAttributes];
     
     
     expandableText.selectable = originallySelected;
-    [self animateToCenter];
+    [self recalculateDestination];
 }
-
-- (void) recursivelyAdjustView:(UIView*)viewToAdjust by:(CGFloat)dif
+        
+- (void) recalculateDestination
 {
-    CGRect f = viewToAdjust.frame;
-    f.size.height += dif;
-    
-    UIViewAutoresizing mask = viewToAdjust.autoresizingMask;
-    viewToAdjust.autoresizingMask = UIViewAutoresizingNone;
-    if (viewToAdjust.superview && viewToAdjust != self)
+    switch (self.popupState)
     {
-        [self recursivelyAdjustView:viewToAdjust.superview by:dif];
+        case PopupState_ReturningToPending:
+            [self returnToPending];
+            break;
+        case PopupState_Pending:
+            [self moveToPending];
+            break;
+        case PopupState_Closing:
+        case PopupState_Closed:
+            [self close];
+            break;
+        case PopupState_Opening:
+        case PopupState_Opened:
+            [self reentrySafeOpen];
+            break;
     }
-
-    viewToAdjust.frame = f;
-    viewToAdjust.autoresizingMask = mask;
 }
 
 - (void) awakeFromNib
 {
     [super awakeFromNib];
-    [self setup];
+    self.popupState = PopupState_Pending;
+    
+    for ( UIView* view in roundedViews )
+    {
+        view.layer.cornerRadius = 10.f;
+    }
+    
+    for (UITextView* textView in expandableTextViews)
+    {
+        @weakify(self)
+        [[RACObserve(textView, text)
+          startWith:textView.text]
+          subscribeNext:^(NSString* newText)
+          {
+              @strongify(self)
+              [self sizeExpandableTextView:textView];
+          }];
+    }
 }
 
 + (instancetype) get
@@ -149,113 +133,498 @@ static void* textUpdateContext = &textUpdateContext;
     return view;
 }
 
+- (CGRect) pendingFrame
+{
+    CGRect parentBounds = viewController.view.bounds;
+    CGRect popupFrame = [self centerFrame];
+    switch (self.revealDirection)
+    {
+        default:
+        case None:
+            break;
+        case Top:
+            popupFrame.origin.y -= parentBounds.size.height / 2.f;
+            break;
+        case Bottom:
+            popupFrame.origin.y += parentBounds.size.height / 2.f + popupFrame.size.height / 2.f;
+            break;
+        case Left:
+            popupFrame.origin.x -= parentBounds.size.width / 2.f;
+            break;
+        case Right:
+            popupFrame.origin.x += parentBounds.size.width / 2.f + popupFrame.size.width / 2.f;
+            break;
+    }
+    
+    return popupFrame;
+}
+
+- (CGRect) centerFrame
+{
+    CGRect parentBounds = viewController.view.bounds;
+    CGRect popupFrame = self.frame;
+    popupFrame.origin.x = parentBounds.size.width / 2.f - popupFrame.size.width / 2.f;
+    popupFrame.origin.y = parentBounds.size.height / 2.f - popupFrame.size.height / 2.f;
+    return popupFrame;
+}
+
+- (CGRect) closedFrame
+{
+    CGRect parentBounds = viewController.view.bounds;
+    CGRect popupFrame = [self centerFrame];
+    switch (self.revealDirection)
+    {
+        default:
+        case None:
+            break;
+        case Top:
+            popupFrame.origin.y += parentBounds.size.height / 2.f + popupFrame.size.height / 2.f;
+            break;
+        case Bottom:
+            popupFrame.origin.y -= parentBounds.size.height / 2.f;
+            break;
+        case Left:
+            popupFrame.origin.x += parentBounds.size.width / 2.f + popupFrame.size.width / 2.f;
+            break;
+        case Right:
+            popupFrame.origin.x -= parentBounds.size.width / 2.f;
+            break;
+    }
+    
+    return popupFrame;
+}
+
+- (void) animate:(void(^)())animateBlock
+        complete:(void(^)(BOOL finished))completeBlock
+        animated:(BOOL)isAnimated
+{
+    if (isAnimated)
+    {
+        [UIView animateWithDuration:[self animationSpeed]
+                              delay:0.f
+             usingSpringWithDamping:1.f
+              initialSpringVelocity:0.f
+                            options:UIViewAnimationOptionBeginFromCurrentState
+                         animations:animateBlock
+                         completion:completeBlock];
+    }
+    else
+    {
+        animateBlock();
+        completeBlock(YES);
+    }
+}
+
+- (void) moveToPending
+{
+    self.frame = [self pendingFrame];
+    self.alpha = 0.f;
+    self.popupState = PopupState_Pending;
+}
+
+- (void) returnToPending
+{
+    UIView* curBlockingView = blockingView;
+    for ( UIGestureRecognizer* rec in [blockingView.gestureRecognizers copy] )
+    {
+        [blockingView removeGestureRecognizer:rec];
+    }
+    blockingView = nil;
+
+    self.popupState = PopupState_ReturningToPending;
+    
+    [self
+     animate:^{
+         curBlockingView.alpha = 0.f;
+     }complete:^(BOOL finished){
+         // TODO: This will skip if moving to pending and the destination is recalculated...
+         [curBlockingView removeFromSuperview];
+     }animated:YES];
+    
+    [self
+     animate:^
+     {
+         self.frame = [self closedFrame];
+         self.alpha = 0.f;
+     }
+     complete:^(BOOL finished)
+     {
+         if (finished && self.popupState == PopupState_ReturningToPending)
+         {
+             self.frame = [self pendingFrame];
+             self.popupState = PopupState_Pending;
+         }
+     }
+     animated:YES];
+}
+
+- (void) open
+{
+    UIView* containerView = viewController.view;
+    CGRect blockingFrame = containerView.bounds;
+    blockingView = [[UIView alloc] initWithFrame:blockingFrame];
+    
+    [containerView insertSubview:blockingView belowSubview:self];
+
+    blockingView.backgroundColor = self.blockingViewColor
+        ? self.blockingViewColor
+        : [UIColor colorWithRed:21.f/255.f
+                      green:21.f/255.f
+                       blue:21.f/255.f
+                      alpha:0.25f];
+    blockingView.userInteractionEnabled = YES;
+    blockingView.alpha = 0.f;
+    blockingView.autoresizingMask =
+    UIViewAutoresizingFlexibleLeftMargin    |
+    UIViewAutoresizingFlexibleWidth         |
+    UIViewAutoresizingFlexibleRightMargin   |
+    UIViewAutoresizingFlexibleTopMargin     |
+    UIViewAutoresizingFlexibleHeight        |
+    UIViewAutoresizingFlexibleBottomMargin;
+    
+    UITapGestureRecognizer* tap = [[UITapGestureRecognizer alloc] initWithTarget:self
+                                                                          action:@selector(closeFromBackgroundTap:)];
+    [blockingView addGestureRecognizer:tap];
+ 
+    [self reentrySafeOpen];
+}
+
+- (void) reentrySafeOpen
+{
+    self.popupState = PopupState_Opening;
+    [self
+     animate:^
+     {
+         blockingView.alpha = 1.f;
+     }
+     complete:nil animated:YES];
+
+    [self
+    animate:^
+    {
+        self.frame = [self centerFrame];
+        self.alpha = 1.f;
+    }
+    complete:^(BOOL finished)
+     {
+        if (finished && self.popupState == PopupState_Opening)
+        {
+            self.popupState = PopupState_Opened;
+        }
+     }
+     animated:YES];
+}
+
+- (void) close
+{
+    BOOL wasClosed = self.popupState == PopupState_Closed || self.popupState == PopupState_Closing;
+    if (wasClosed)
+    {
+        return;
+    }
+
+    BOOL wasOpen = self.popupState == PopupState_Opening || self.popupState == PopupState_Opened;
+    if (!wasOpen)
+    {
+        self.popupState = PopupState_Closed;
+        [self removeFromSuperview];
+    }
+    else
+    {
+        self.popupState = PopupState_Closing;
+
+        [self
+         animate:^
+         {
+             blockingView.alpha = 0.f;
+         }
+         complete:^(BOOL finished)
+         {
+             if (finished)
+             {
+                 [blockingView removeFromSuperview];
+                 for ( UIGestureRecognizer* rec in [blockingView.gestureRecognizers copy] )
+                 {
+                     [blockingView removeGestureRecognizer:rec];
+                 }
+                 blockingView = nil;
+             }
+         }
+         animated:YES];
+
+        [self
+         animate:^
+         {
+             self.frame = [self closedFrame];
+             self.alpha = 0.f;
+         }
+         complete:^(BOOL finished)
+         {
+             if (finished && self.popupState == PopupState_Closing)
+             {
+                 self.popupState = PopupState_Closed;
+                 [self removeFromSuperview];
+             }
+         }
+         animated:YES];
+    }
+}
+
 - (IBAction) closeSelf:(id)sender
 {
-    [self closeExpandableViews];
-    [viewController dismissPopup:self];
+    [self close];
 }
 
 - (void) closeFromBackgroundTap:(id)sender
 {
-    [self closeExpandableViews];
-    [self closeSelf:sender];
+    [self close];
 }
 
-- (void) animateToCenter
+- (CGFloat) animationSpeed
 {
-    CGRect popupFrame = self.frame;
-    popupFrame.origin.y = self.superview.frame.size.height / 2.f - popupFrame.size.height / 2.f;
-    [UIView animateWithDuration:0.4f
-                          delay:0.f
-                        options:UIViewAnimationOptionBeginFromCurrentState
-                     animations:^{
-                                     self.frame = popupFrame;
-                                     self.alpha = 1.f;
-                                 }
-                                 completion:nil];
+    return 0.4f;
 }
 
-- (BOOL) allowMultipleOpens
+- (BOOL) isOverlayPopup
 {
-    return YES;
+    return NO;
+}
+
+- (int) popupPriority
+{
+    return 0;
+}
+
+- (RACSignal*) stateSignal
+{
+    return [RACObserve(self, popupState) startWith:@(self.popupState)];
+}
+
+- (void) dealloc
+{
+#if POPUP_DEBUG
+    NSLog(@"%@ Dealloced!", [self class]);
+#endif
 }
 
 @end
 
+@implementation UIView(PopupExtension)
 
-@implementation AB_BaseViewController (PopupExtension)
+- (USArrayWrapper*) popups
+{
+    return
+    Underscore.array(self.subviews)
+    .filter(^BOOL(AB_Popup* popup)
+            {
+                return
+                [popup isKindOfClass:[AB_Popup class]]
+                && popup.popupState != PopupState_Closing
+                && popup.popupState != PopupState_Closed;
+            });
+}
+
+@end
+
+@implementation UIViewController (PopupExtension)
+
+- (USArrayWrapper*) popups
+{
+    return
+    Underscore.array(self.view.subviews)
+    .filter(^BOOL(AB_Popup* popup)
+            {
+                return
+                [popup isKindOfClass:[AB_Popup class]]
+                && popup.viewController == self
+                && popup.popupState != PopupState_Closing
+                && popup.popupState != PopupState_Closed;
+            });
+}
+
+- (USArrayWrapper*) blockingPopups
+{
+    return
+    [self popups]
+    .filter(^BOOL(AB_Popup* popup)
+            {
+                return ![popup isOverlayPopup];
+            });
+}
+
+- (USArrayWrapper*) overlayPopups
+{
+    return
+    [self popups]
+    .filter(^BOOL(AB_Popup* popup)
+            {
+                return [popup isOverlayPopup];
+            });
+}
+
+- (NSString*)popupStateDisplayName:(PopupState)state
+{
+    return @{
+             @(PopupState_Pending): @"Pending",
+             @(PopupState_ReturningToPending): @"ReturningToPending",
+             @(PopupState_Opening): @"Opening",
+             @(PopupState_Opened): @"Opened",
+             @(PopupState_Closing): @"Closing",
+             @(PopupState_Closed): @"Closed",
+             }[@(state)];
+}
+
+- (void) dispatchPopups
+{
+    AB_Popup* currentPopup = [self blockingPopups].first;
+    if (currentPopup.popupState == PopupState_Pending ||
+        currentPopup.popupState == PopupState_ReturningToPending)
+    {
+        [currentPopup open];
+    }
+    
+    [self blockingPopups]
+    .filter(^BOOL(AB_Popup* popup)
+            {
+                return
+                popup != currentPopup &&
+                (
+                     popup.popupState == PopupState_Opening ||
+                     popup.popupState == PopupState_Opened
+                );
+            })
+    .each(^(AB_Popup* popup)
+            {
+                [popup returnToPending];
+            });
+}
 
 - (AB_Popup*) showPopup:(Class)popupClass
 {
     AB_Popup* newPopup = [popupClass get];
     newPopup.viewController = self;
     
-    if (![newPopup allowMultipleOpens])
-    {
-        for (UIView* subview in self.view.subviews)
-        {
-            if ([subview class] == popupClass)
+    AB_Popup* popupAboveNew =
+    [self popups]
+    .filter(^BOOL(AB_Popup* popup)
             {
-                return nil;
-            }
-        }
+                return [popup popupPriority] < [newPopup popupPriority];
+            })
+    .first;
+    
+    if (!popupAboveNew)
+    {
+        popupAboveNew =
+        [self overlayPopups]
+        .first;
     }
     
-    CGRect blockingFrame = self.view.frame;
-    blockingFrame.origin = CGPointZero;
-    UIView* blockingView = [[UIView alloc] initWithFrame:blockingFrame];
-    [self.view addSubview:blockingView];
-    blockingView.backgroundColor = [UIColor colorWithRed:21.f/255.f
-                                                   green:21.f/255.f
-                                                    blue:21.f/255.f
-                                                   alpha:0.25f];
-    blockingView.userInteractionEnabled = YES;
-    blockingView.alpha = 0.f;
+    if (!popupAboveNew)
+    {
+        [self.view addSubview:newPopup];
+    }
+    else
+    {
+        [self.view insertSubview:newPopup belowSubview:popupAboveNew];
+    }
+
+    [newPopup setup];
+
+    [newPopup moveToPending];
+    @weakify(self)
+    [[[newPopup.stateSignal
+       filter:^BOOL(NSNumber* state)
+       {
+           return [state integerValue] == PopupState_Closing ||
+                  [state integerValue] == PopupState_Closed;
+       }]
+      take:1]
+     subscribeNext:^(id _)
+     {
+         @strongify(self)
+         [self dispatchPopups];
+     }];
     
-    UITapGestureRecognizer* tap = [[UITapGestureRecognizer alloc] initWithTarget:newPopup action:@selector(closeFromBackgroundTap:)];
-    [blockingView addGestureRecognizer:tap];
-    
-    newPopup.blockingView = blockingView;
-    
-    
-    CGRect popupFrame = newPopup.frame;
-    popupFrame.origin.x = self.view.frame.size.width / 2.f - newPopup.frame.size.width / 2.f;
-    popupFrame.origin.y = self.view.frame.size.height;
-    newPopup.alpha = 0.f;
-    newPopup.frame = popupFrame;
-    
-    [self.view addSubview:newPopup];
-    
-    [newPopup animateToCenter];
-    
-    [UIView animateWithDuration:0.4f
-                     animations:^{
-                         blockingView.alpha = 1.f;
-                     }];
-    
+#if POPUP_DEBUG
+    [newPopup.stateSignal
+     subscribeNext:^(id _)
+     {
+         @strongify(self)
+         NSString* allPopups =
+         [Underscore.array(self.view.subviews)
+          .filter(^BOOL(AB_Popup* popup)
+                  {
+                      return [popup isKindOfClass:[AB_Popup class]];
+                  })
+
+          .map(^NSString*(AB_Popup* popup)
+               {
+                   return [NSString stringWithFormat:@"%@ (%@)", [popup class], [self popupStateDisplayName:popup.popupState]];
+               })
+          .unwrap componentsJoinedByString:@", "];
+         
+         NSLog(@"Popups: %@", allPopups);
+     }];
+#endif
+
+    if ([newPopup isOverlayPopup])
+    {
+        [newPopup open];
+    }
+    else
+    {
+        [self dispatchPopups];
+    }
+
     return newPopup;
 }
 
-- (void) dismissPopup:(AB_Popup*)popup
+- (void) closeAllPopups
 {
-    CGRect popupFrame = popup.frame;
-    popupFrame.origin.y = 0.f - popupFrame.size.height;
-    [UIView animateWithDuration:0.4f
-                     animations:^{
-                         popup.frame = popupFrame;
-                         popup.alpha = 0.f;
-                         popup.blockingView.alpha = 0.f;
-                     }
-                     completion:^(BOOL finished){
-                         [popup removeFromSuperview];
-                         [popup.blockingView removeFromSuperview];
-                         for ( UIGestureRecognizer* rec in [popup.blockingView.gestureRecognizers copy] )
-                         {
-                             [popup.blockingView removeGestureRecognizer:rec];
-                         }
-                     }];
-    
+    [self popups]
+    .each(^(AB_Popup* popup)
+          {
+              [popup close];
+          });
 }
 
+- (void) closeAllPopupsOfType:(Class)popupClass
+{
+    [self popups]
+    .filter(^BOOL(id obj)
+            {
+                return [obj isKindOfClass:popupClass];
+            })
+    .each(^(AB_Popup* popup)
+            {
+              [popup close];
+            });
+}
+
+- (void) closeAllPopupsExcept:(NSArray*)popupClasses
+{
+    [self popups]
+    .filter(^BOOL(id obj)
+            {
+                return ![popupClasses containsObject:[obj class]];
+            })
+    .each(^(AB_Popup* popup)
+          {
+              [popup close];
+          });
+}
+
+- (void) closeAllPopupsOfTypes:(NSArray*)popupClasses
+{
+    [self popups]
+    .filter(^BOOL(id obj)
+            {
+                return [popupClasses containsObject:[obj class]];
+            })
+    .each(^(AB_Popup* popup)
+          {
+              [popup close];
+          });
+}
 
 @end

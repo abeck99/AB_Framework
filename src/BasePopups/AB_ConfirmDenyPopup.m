@@ -15,8 +15,8 @@
 
 - (IBAction) confirm:(id)sender
 {
-    [self closeSelf:sender];
-    if ( self.confirmBlock )
+    [self close];
+    if (self.confirmBlock)
     {
         self.confirmBlock();
     }
@@ -24,10 +24,19 @@
 
 - (IBAction) deny:(id)sender
 {
-    [self closeSelf:sender];
-    if ( self.denyBlock )
+    [self close];
+    if (self.denyBlock)
     {
         self.denyBlock();
+    }
+}
+
+- (IBAction) cancel:(id)sender
+{
+    [self close];
+    if (self.cancelBlock)
+    {
+        self.cancelBlock();
     }
 }
 

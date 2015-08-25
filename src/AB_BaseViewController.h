@@ -7,11 +7,11 @@
 #import <UIKit/UIKit.h>
 #import "AB_DataContainer.h"
 #import "AB_Funcs.h"
+#import "AB_SideBarProtocol.h"
 
 #import "GAITrackedViewController.h"
 
 typedef void (^CreateControllerBlock)(AB_Controller controller);
-typedef void (^ConfirmBlock)(BOOL confirmed);
 
 @interface AB_BaseViewController : GAITrackedViewController<AB_DataContainer>
 {
@@ -25,16 +25,28 @@ typedef void (^ConfirmBlock)(BOOL confirmed);
     IBOutletCollection(UIScrollView) NSArray* scrollViews;
     IBOutletCollection(UIView) NSArray* scrollContentViews;
     
-    AB_SectionViewController* parent;
+    AB_SectionViewController* sectionParent;
+    AB_BaseViewController* viewParent;
+    
+    NSArray* sidebars;
     
     id _data;
 }
 
+- (NSString*) setScreenName;
+
 + (Class) expectedClass;
 
 - (void) setupWithFrame:(CGRect)frame;
-- (void) openViewInView:(UIView*)insideView withParent:(AB_SectionViewController*)setParent;
+- (void) openInView:(UIView*)insideView
+     withViewParent:(AB_BaseViewController*)viewParent_
+          inSection:(AB_SectionViewController*)sectionParent_;
 - (void) closeView;
+
+- (id<AB_SideBarProtocol>) addSidebarAndOpen:(id)name;
+- (id<AB_SideBarProtocol>) addSidebar:(id)name;
+- (void) removeSidebar:(id)name;
+- (id<AB_SideBarProtocol>) sidebar:(id)name;
 
 - (void) pushOnParent:(NSString*)controllerName;
 - (void) pushOnParent:(NSString*)controllerName withConfigBlock:(CreateControllerBlock)configurationBlock;
@@ -45,10 +57,7 @@ typedef void (^ConfirmBlock)(BOOL confirmed);
 - (void) jumpToOrigin;
 - (void) jumpToElement:(UIView*)element;
 
-- (void) rootJumpToOrigin;
-- (void) rootJumpToElement:(UIView*)element;
-
-- (void) setupFromData;
+- (void) dataUpdated;
 
 - (void) attemptToReopen;
 - (void) poppedAwayWhileStillOpen;
@@ -58,12 +67,11 @@ typedef void (^ConfirmBlock)(BOOL confirmed);
 
 - (IBAction) debugLayout:(id)sender;
 
-- (void) allowChangeController:(ConfirmBlock)confirmBlock;
-
 - (void) resetScrollViewContentSizes;
+- (NSArray*) sidebars;
 
 @property(readonly) BOOL isOpen;
 @property(strong) id data;
-@property(readonly) AB_SectionViewController* parent;
+@property(readonly) AB_SectionViewController* sectionParent;
 
 @end

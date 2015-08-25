@@ -19,21 +19,18 @@
     
     id sectionSyncObject;
     
-    IBOutlet UIImageView* triangleView;
+    IBOutlet UIView* triangleView;
 
     NSArray* controllerDataStack;
     
     id<UIViewControllerContextTransitioning> currentTransitionObject;
+
+    NSDictionary* sectionButtons;
 }
 
 - (id) initWithNibName:(NSString *)nibNameOrNil
                 bundle:(NSBundle *)nibBundleOrNil
      defaultController:(AB_Controller)defaultController;
-
-- (IBAction) changeController:(id)sender;
-- (IBAction) changeController:(id)sender forced:(BOOL)forced;
-- (IBAction) changeControllerForced:(id)sender;
-- (void) changeControllerName:(id)controllerName forced:(BOOL)forced;
 
 - (AB_Controller) currentController;
 
@@ -47,9 +44,6 @@
 - (NSUInteger) numPushedViews;
 - (void) setHighlighted;
 - (void) controllerDidChange;
-
-- (void) requestFullScreen;
-- (void) requestEmbeddedScreen;
 
 @property(readonly) UIView* contentView;
 

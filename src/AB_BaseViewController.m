@@ -7,16 +7,21 @@
 #import "AB_BaseViewController.h"
 #import "AB_Widget.h"
 #import "AB_SectionViewController.h"
+#import "AB_Controllers.h"
+#import "AB_SideBarProtocol.h"
+#import "Underscore.h"
+#import "AB_Popup.h"
 
 @implementation AB_BaseViewController
 
 @synthesize isOpen;
 @synthesize key;
-@synthesize parent;
 
 - (void)viewWillAppear:(BOOL)animated
 {
     [super viewWillAppear:animated];
+    
+    sidebars = sidebars ? sidebars : @[];
     
     [self setupScrollViews];
     
@@ -50,19 +55,61 @@
         newFrame.origin = originalFrame.origin;
         view.frame = newFrame;
     }
+
+    self.screenName = [self setScreenName];
+}
+
+- (NSString*) setScreenName
+{
+    return nil;
 }
 
 - (void) setupWithFrame:(CGRect)frame
 {
+    sidebars = sidebars ? sidebars : @[];
     self.view.frame = frame;
 }
 
-- (void) openViewInView:(UIView*)insideView withParent:(AB_SectionViewController*)setParent
+- (void) openInView:(UIView*)insideView
+     withViewParent:(AB_BaseViewController*)viewParent_
+          inSection:(AB_SectionViewController*)sectionParent_;
 {
-    parent = setParent;
-    [parent addChildViewController:self];
-    [insideView addSubview:self.view];
-    [self didMoveToParentViewController:parent];
+    sectionParent = sectionParent_;
+    viewParent = viewParent_;
+    
+    [viewParent addChildViewController:self];
+    
+    UIView* topPopupView = (UIView*) [insideView popups].first;
+    
+    id<AB_SideBarProtocol> sidebarAboveNew = nil;
+    
+    if ([[self class] conformsToProtocol:@protocol(AB_SideBarProtocol)])
+    {
+        id<AB_SideBarProtocol> selfSidebar = (id<AB_SideBarProtocol>)self;
+        sidebarAboveNew =
+        Underscore.array([viewParent_ sidebars])
+        .filter(^BOOL(id<AB_SideBarProtocol> sidebar)
+                {
+                    return [sidebar priority] > [selfSidebar priority];
+                })
+        .first;
+    }
+    UIView* sidebarView = [sidebarAboveNew sidebarView];
+
+    UIView* aboveView = sidebarView
+        ? sidebarView
+        : topPopupView;
+    
+    if (aboveView)
+    {
+        [insideView insertSubview:self.view belowSubview:aboveView];
+    }
+    else
+    {
+        [insideView addSubview:self.view];
+    }
+
+    [self didMoveToParentViewController:viewParent];
     
     isOpen = YES;
 }
@@ -79,7 +126,8 @@
     [self removeFromParentViewController];
     
     isOpen = NO;
-    parent = nil;
+    viewParent = nil;
+    sectionParent = nil;
 }
 
 - (UIImage*) image:(UIImage*)image tintedWithColor:(UIColor*)tintColor
@@ -110,7 +158,69 @@
 
 - (void) pushOnParent:(NSString*)controllerName withConfigBlock:(CreateControllerBlock)configurationBlock
 {
-    [parent pushControllerWithName:controllerName withConfigBlock:configurationBlock];
+    [sectionParent pushControllerWithName:controllerName withConfigBlock:configurationBlock];
+}
+
+- (id<AB_SideBarProtocol>) addSidebarAndOpen:(id)name
+{
+    id<AB_SideBarProtocol> sidebar = [self addSidebar:name];
+    sidebar.opened = YES;
+    return sidebar;
+}
+
+- (id<AB_SideBarProtocol>) sidebar:(id)name
+{
+    for (AB_Controller c in sidebars)
+    {
+        if ([c.key isEqual:name])
+        {
+            return (id<AB_SideBarProtocol>) c;
+        }
+    }
+    
+    return nil;
+}
+
+- (id<AB_SideBarProtocol>) addSidebar:(id)name
+{
+    AB_Controller sectionController = [getController() controllerForTag:name];
+    
+    // TODO: Prevent multiple side bars of the same name?
+    if ([[sectionController class] conformsToProtocol:@protocol(AB_SideBarProtocol)])
+    {
+        id<AB_SideBarProtocol> sidebar = (id<AB_SideBarProtocol>)sectionController;
+        [sidebar setupSidebarInController:self];
+        
+        NSMutableArray* mutableSidebars = [sidebars mutableCopy];
+        [mutableSidebars addObject:sidebar];
+        sidebars = [NSArray arrayWithArray:mutableSidebars];
+        
+        return sidebar;
+    }
+    
+    return nil;
+}
+
+- (void) removeSidebar:(id)name
+{
+    AB_BaseViewController<AB_SideBarProtocol>* sidebar =
+    Underscore.array(sidebars)
+    .filter(^BOOL(AB_BaseViewController* controller)
+            {
+                return [controller isKindOfClass:[AB_BaseViewController class]] &&
+                    [controller.key isEqual:name];
+            })
+    .first;
+    
+    [sidebar closeView];
+    [sidebar.view removeFromSuperview];
+    
+    sidebars = Underscore.array(sidebars)
+    .filter(^BOOL(id obj)
+            {
+                return obj != sidebar;
+            })
+    .unwrap;
 }
 
 - (id) data
@@ -120,15 +230,10 @@
 
 - (void) setData:(id)data
 {
-    if ( !data )
+    if ( !data || [data isKindOfClass:[[self class] expectedClass]] )
     {
         _data = data;
-    }
-    else
-    if ( [data isKindOfClass:[[self class] expectedClass]] )
-    {
-        _data = data;
-        [self setupFromData];
+        [self dataUpdated];
     }
     else
     {
@@ -145,7 +250,9 @@
 
 - (void) pushOnNavigationController:(id)controllerName withConfigBlock:(CreateControllerBlock)configurationBlock animated:(BOOL)animated
 {
-    [parent pushOnNavigationController:controllerName withConfigBlock:configurationBlock animated:animated];
+    [sectionParent pushOnNavigationController:controllerName
+                              withConfigBlock:configurationBlock
+                                     animated:animated];
 }
 
 - (void) jumpToOrigin
@@ -194,7 +301,7 @@
 //    }
 }
 
-- (void) setupFromData
+- (void) dataUpdated
 {
 }
 
@@ -218,23 +325,6 @@
     
 }
 
-- (void) rootJumpToOrigin
-{
-    if ( !parent )
-    {
-        [self jumpToOrigin];
-    }
-    [parent rootJumpToOrigin];
-}
-
-- (void) rootJumpToElement:(UIView*)element
-{
-    if ( !parent )
-    {
-        [self jumpToElement:element];
-    }
-    [parent rootJumpToElement:element];
-}
 
 - (void) resetScrollViewContentSizes
 {
@@ -275,6 +365,38 @@
 - (void) allowChangeController:(ConfirmBlock)confirmBlock
 {
     confirmBlock(YES);
+}
+
+- (NSDictionary*) getDescription
+{
+    return @{
+             @"tag": self.key,
+             @"data": _data ? _data : [NSNull null]
+             };
+}
+
+- (void) applyDescription:(NSDictionary*)dictionary
+{
+    id data = dictionary[@"data"];
+    if (data != [NSNull null])
+    {
+        self.data = data;
+    }
+}
+
+- (void) poppedBack
+{
+    
+}
+
+- (AB_SectionViewController*) sectionParent
+{
+    return sectionParent;
+}
+
+- (NSArray*) sidebars
+{
+    return sidebars;
 }
 
 @end
