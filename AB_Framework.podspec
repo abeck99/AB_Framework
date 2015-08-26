@@ -20,6 +20,7 @@ Pod::Spec.new do |s|
 	s.dependency 'ReactiveCocoa'
 	s.dependency 'Mantle'
 	s.dependency 'LoremIpsum'
+	s.dependency 'Underscore.m'
 
 	s.ios.deployment_target = '8.0'
 end
