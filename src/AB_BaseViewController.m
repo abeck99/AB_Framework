@@ -56,7 +56,8 @@
         view.frame = newFrame;
     }
 
-    self.screenName = [self setScreenName];
+    // TODO: Figure out cocoapods and google analytics dependency
+    // self.screenName = [self setScreenName];
 }
 
 - (NSString*) setScreenName
