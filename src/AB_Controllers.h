@@ -19,3 +19,4 @@
 @end
 
 AB_Controllers* getController();
+void setController(AB_Controllers* newControllers);

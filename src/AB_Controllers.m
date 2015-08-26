@@ -15,6 +15,19 @@
 
 @end
 
+// TODO: Make this into something that each controller keeps a reference to the controller factory, this global call is not good
+AB_Controllers* gControllers = nil;
+
+AB_Controllers* getController()
+{
+    return gControllers;
+}
+
+void setController(AB_Controllers* newControllers)
+{
+    gControllers = newControllers;
+}
+
 @implementation AB_Controllers
 
 - (id) init
