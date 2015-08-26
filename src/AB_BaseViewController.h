@@ -9,11 +9,11 @@
 #import "AB_Funcs.h"
 #import "AB_SideBarProtocol.h"
 
-#import "GAITrackedViewController.h"
+//#import "GAITrackedViewController.h"
 
 typedef void (^CreateControllerBlock)(AB_Controller controller);
 
-@interface AB_BaseViewController : GAITrackedViewController<AB_DataContainer>
+@interface AB_BaseViewController : UIViewController<AB_DataContainer>
 {
     BOOL isOpen;
     IBOutletCollection(UIView) NSArray* themeViews;
