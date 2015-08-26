@@ -20,6 +20,7 @@
 @property(strong) NSURL* nextURL;
 @property(assign) BOOL retainMultiCellSize;
 @property(assign) BOOL equalSizeColumns;
+@property(strong) UIView* headerView;
 
 - (int) numRows;
 

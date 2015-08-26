@@ -177,6 +177,35 @@
     NSMutableDictionary* mutableNibs = [emptyNibs mutableCopy];
     [mutableNibs setObject:newNib forKey:sectionType];
     emptyNibs = [NSDictionary dictionaryWithDictionary:mutableNibs];
+- (void)tableView:(UITableView *)tableView willDisplayHeaderView:(UIView *)view forSection:(NSInteger)sectionNum
+{
+    AB_SectionInfo* section = [self section:(int)sectionNum];
+    if (section.headerView)
+    {
+        for (UIView* v in [view.subviews copy])
+        {
+            [v removeFromSuperview];
+        }
+        view.backgroundColor = [UIColor clearColor];
+        
+        CGRect f = section.headerView.frame;
+        f.size.width = self.tableView.frame.size.width;
+        section.headerView.frame = f;
+        
+        [view addSubview:section.headerView];
+    }
+}
+
+- (CGFloat)tableView:(UITableView *)tableView heightForHeaderInSection:(NSInteger)sectionNum
+{
+    AB_SectionInfo* section = [self section:(int)sectionNum];
+    if (section.headerHidden)
+    {
+        return 0.f;
+    }
+    return section.headerView
+    ? section.headerView.frame.size.height
+    : UITableViewAutomaticDimension;
 }
 
 
@@ -267,16 +296,6 @@
         
         return maxHeight;
     }
-}
-
-- (CGFloat)tableView:(UITableView *)tableView heightForHeaderInSection:(NSInteger)section
-{
-    if ( [self section:(int) section].headerHidden )
-    {
-        return 0.f;
-    }
-    
-    return 12.f;
 }
 
 - (CGFloat)tableView:(UITableView *)tableView heightForFooterInSection:(NSInteger)section
