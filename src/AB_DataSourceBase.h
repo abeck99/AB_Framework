@@ -7,7 +7,7 @@
 #import <Foundation/Foundation.h>
 #import "AB_FilteredArray.h"
 #import <UIKit/UIKit.h>
-#import <ReactiveCocoa.h>
+#import "ReactiveCocoa.h"
 
 @interface AB_SectionInfo : NSObject
 
