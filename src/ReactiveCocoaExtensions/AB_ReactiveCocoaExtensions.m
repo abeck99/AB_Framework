@@ -157,7 +157,7 @@
 
 - (BOOL) isValid
 {
-    return self != [NSNull null] && self != [RACTupleNil tupleNil];
+    return self != [NSNull null] && self != [RACTupleNil tupleNil] && self != nil;
 }
 
 @end

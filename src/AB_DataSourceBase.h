@@ -50,6 +50,7 @@
 - (void) triggerNextURL:(NSURL*)url inSection:(AB_SectionInfo*)section;
 
 // Override this to change reloadData behaviour (optional)
+- (void) updateSectionAnimated:(AB_SectionInfo*)section;
 - (void) update;
 
 // Call these to set properties

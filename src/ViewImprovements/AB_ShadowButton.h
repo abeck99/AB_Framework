@@ -22,5 +22,6 @@ IB_DESIGNABLE
 
 @property(strong) IBInspectable UIColor* highlightedColor;
 @property(strong) IBInspectable UIColor* disabledColor;
+@property(strong) IBInspectable UIColor* selectedColor;
 
 @end

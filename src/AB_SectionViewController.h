@@ -6,6 +6,7 @@
 
 #import <UIKit/UIKit.h>
 #import "AB_BaseViewController.h"
+#import "AB_SelectControllerButton.h"
 
 @interface AB_SectionViewController : AB_BaseViewController
 {
@@ -38,11 +39,21 @@
 - (void) pushControllerWithName:(id)name withAnimation:(id<UIViewControllerAnimatedTransitioning>)animation;
 - (void) pushControllerWithName:(id)name withConfigBlock:(CreateControllerBlock)configurationBlock;
 - (void) pushControllerWithName:(id)name withConfigBlock:(CreateControllerBlock)configurationBlock withAnimation:(id<UIViewControllerAnimatedTransitioning>)animation;
+
+- (void) pushControllerWithName:(id)name allowReopen:(BOOL)allowReopen;
+- (void) pushControllerWithName:(id)name withAnimation:(id<UIViewControllerAnimatedTransitioning>)animation allowReopen:(BOOL)allowReopen;
+- (void) pushControllerWithName:(id)name withConfigBlock:(CreateControllerBlock)configurationBlock allowReopen:(BOOL)allowReopen;
+- (void) pushControllerWithName:(id)name withConfigBlock:(CreateControllerBlock)configurationBlock withAnimation:(id<UIViewControllerAnimatedTransitioning>)animation allowReopen:(BOOL)allowReopen;
+
+- (void) handleMagicButton:(AB_SelectControllerButton*)magicButton;
+
+- (id<UIViewControllerAnimatedTransitioning>) defaultAnimationTransitioningTo:(id)key;
 - (void) popController;
 - (void) popControllerWithAnimation:(id<UIViewControllerAnimatedTransitioning>)animation;
 
 - (NSUInteger) numPushedViews;
 - (void) setHighlighted;
+- (void) controllerWillChange:(AB_Controller)newController;
 - (void) controllerDidChange;
 
 @property(readonly) UIView* contentView;

@@ -16,6 +16,8 @@ void printAllSubviews(UIView* view, int depth);
 void AdjustViewToHeight(UIView* root, UIView* viewToAdjust, CGFloat height);
 void RecursivelyAdjustView(UIView* root, UIView* viewToAdjust, CGFloat dif);
 
+float randomFloatBetween(float smallNumber, float bigNumber);
+
 CGSize CGSizeMultiply(CGSize a, CGSize b);
 CGSize CGSizeMultiplyScalar(CGSize size, CGFloat scalar);
 CGSize CGSizeAdd(CGSize a, CGSize b);

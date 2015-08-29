@@ -11,3 +11,11 @@
 @interface AB_PassthroughView : UIView
 
 @end
+
+@interface AB_PassthroughTableView : UITableView
+
+@end
+
+@interface AB_PassthroughTableViewCell : UITableViewCell
+
+@end

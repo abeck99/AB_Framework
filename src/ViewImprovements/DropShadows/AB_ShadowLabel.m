@@ -12,7 +12,7 @@
 
 - (void) setShadowRadius:(CGFloat)shadowRadius
 {
-//    self.layer.shadowRadius = shadowRadius;
+    self.layer.shadowRadius = shadowRadius;
 }
 
 - (CGFloat) shadowRadius
@@ -22,7 +22,7 @@
 
 - (void) setShadowOffset2:(CGSize)shadowOffset
 {
-//    self.layer.shadowOffset = shadowOffset;
+    self.layer.shadowOffset = shadowOffset;
 }
 
 - (CGSize) shadowOffset2
@@ -32,7 +32,7 @@
 
 - (void) setShadowColor2:(UIColor*)shadowColor
 {
-//    self.layer.shadowColor = shadowColor.CGColor;
+    self.layer.shadowColor = shadowColor.CGColor;
 }
 
 - (UIColor*) shadowColor2
@@ -42,7 +42,7 @@
 
 - (void) setShadowOpacity:(CGFloat)shadowOpacity
 {
-//    self.layer.shadowOpacity = shadowOpacity;
+    self.layer.shadowOpacity = shadowOpacity;
 }
 
 - (CGFloat) shadowOpacity

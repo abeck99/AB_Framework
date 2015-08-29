@@ -44,6 +44,12 @@ void RecursivelyAdjustView(UIView* root, UIView* viewToAdjust, CGFloat dif)
     viewToAdjust.autoresizingMask = mask;
 }
 
+float randomFloatBetween(float smallNumber, float bigNumber)
+{
+    float diff = bigNumber - smallNumber;
+    return (((float) (arc4random() % ((unsigned)RAND_MAX + 1)) / RAND_MAX) * diff) + smallNumber;
+}
+
 CGSize CGSizeMultiply(CGSize a, CGSize b)
 {
     return CGSizeMake(a.width*b.width, a.height*b.height);

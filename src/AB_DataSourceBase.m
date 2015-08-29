@@ -30,7 +30,12 @@
     static UINib* ret = nil;
     
     dispatch_once(&pred, ^{
-        ret = [UINib nibWithNibName:@"MultiTableCell" bundle:[NSBundle mainBundle]];
+        NSBundle* frameworkBundle = [NSBundle bundleWithPath:
+                                     [[NSBundle mainBundle] pathForResource:@"AB_Framework"
+                                                                     ofType:@"framework"
+                                                                inDirectory:@"Frameworks"]];
+        
+        ret = [UINib nibWithNibName:@"MultiTableCell" bundle:frameworkBundle];
     });
     
     return ret;
@@ -82,6 +87,17 @@
     [self startSpinny];
     emptyLabel.hidden = YES;
     [self clearSections];
+}
+
+- (void) updateSectionAnimated:(AB_SectionInfo*)section
+{
+    if ([sections containsObject:section])
+    {
+        [tableView reloadSections:[NSIndexSet indexSetWithIndex:[sections indexOfObject:section]]
+                 withRowAnimation:UITableViewRowAnimationAutomatic];
+    }
+    [self scrollViewDidScroll:tableView];
+    [updateSubject sendNext:@YES];
 }
 
 - (void) update
@@ -177,6 +193,8 @@
     NSMutableDictionary* mutableNibs = [emptyNibs mutableCopy];
     [mutableNibs setObject:newNib forKey:sectionType];
     emptyNibs = [NSDictionary dictionaryWithDictionary:mutableNibs];
+}
+
 - (void)tableView:(UITableView *)tableView willDisplayHeaderView:(UIView *)view forSection:(NSInteger)sectionNum
 {
     AB_SectionInfo* section = [self section:(int)sectionNum];
@@ -184,15 +202,32 @@
     {
         for (UIView* v in [view.subviews copy])
         {
-            [v removeFromSuperview];
+            if (v != section.headerView)
+            {
+                [v removeFromSuperview];
+            }
         }
-        view.backgroundColor = [UIColor clearColor];
         
+        if (section.headerView.superview == view)
+        {
+            return;
+        }
+
         CGRect f = section.headerView.frame;
         f.size.width = self.tableView.frame.size.width;
         section.headerView.frame = f;
-        
-        [view addSubview:section.headerView];
+
+        if ([view isKindOfClass:[UITableViewHeaderFooterView class]])
+        {
+//            UITableViewHeaderFooterView* builtInView = (UITableViewHeaderFooterView*)view;
+//            builtInView.contentView.backgroundColor = [UIColor clearColor];
+            [view addSubview:section.headerView];
+        }
+        else
+        {
+            view.backgroundColor = [UIColor clearColor];
+            [view addSubview:section.headerView];
+        }
     }
 }
 

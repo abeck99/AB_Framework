@@ -17,5 +17,20 @@
 
 @property(strong) IBInspectable NSString* controllerName;
 @property(assign) IBInspectable BOOL forwardData;
+@property(strong) id<UIViewControllerAnimatedTransitioning> animation;
+
+@property(assign) IBInspectable CGFloat shadowRadius;
+@property(assign) IBInspectable CGSize shadowOffset;
+@property(assign) IBInspectable UIColor* shadowColor;
+@property(assign) IBInspectable CGFloat shadowOpacity;
+
+@property(assign) IBInspectable CGFloat cornerRadius;
+@property(assign) IBInspectable CGFloat borderWidth;
+@property(assign) IBInspectable UIColor* borderColor;
+
+@property(strong) IBInspectable UIColor* highlightedColor;
+@property(strong) IBInspectable UIColor* disabledColor;
+@property(strong) IBInspectable UIColor* selectedColor;
+
 
 @end

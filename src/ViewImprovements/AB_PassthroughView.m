@@ -28,3 +28,63 @@
 }
 
 @end
+
+@implementation AB_PassthroughTableView
+
+- (BOOL) pointInside:(CGPoint)point withEvent:(UIEvent *)event
+{
+    NSMutableArray* touchableViews = [[self visibleCells] mutableCopy];
+
+    [touchableViews addObjectsFromArray:
+    Underscore.array(self.subviews)
+    .filter(^(UIView* view)
+            {
+                return [view isKindOfClass:[UITableViewHeaderFooterView class]];
+            })
+     .unwrap];
+
+    BOOL isPointInside = Underscore.array([NSArray arrayWithArray:touchableViews])
+    .map(^NSArray*(UIView* subview)
+         {
+             if ([subview isKindOfClass:[UITableViewCell class]])
+             {
+                 return ((UITableViewCell*)subview).contentView.subviews;
+             }
+
+             return @[subview];
+         })
+    .flatten
+    .filter(^BOOL(UIView* subview)
+            {
+                return subview.isUserInteractionEnabled;
+            })
+    .any(^BOOL(UIView* subview)
+         {
+             CGPoint pointInView = [subview convertPoint:point fromView:self];
+             return [subview pointInside:pointInView withEvent:event];
+         });
+    
+    return isPointInside;
+}
+
+@end
+
+@implementation AB_PassthroughTableViewCell
+
+- (BOOL) pointInside:(CGPoint)point withEvent:(UIEvent *)event
+{
+    BOOL isPointInside = Underscore.array(self.contentView.subviews)
+    .filter(^BOOL(UIView* subview)
+            {
+                return subview.isUserInteractionEnabled;
+            })
+    .any(^BOOL(UIView* subview)
+         {
+             CGPoint pointInView = [subview convertPoint:point fromView:self];
+             return [subview pointInside:pointInView withEvent:event];
+         });
+    
+    return isPointInside;
+}
+
+@end

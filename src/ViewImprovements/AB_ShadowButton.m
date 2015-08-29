@@ -36,14 +36,16 @@
     @weakify(self)
     RAC(self, backgroundColor) =
     [[RACSignal
-     combineLatest:@[
-                     RACObserve(self, highlighted),
-                     RACObserve(self, enabled)
-                     ]]
-    map:^(RACTuple* tuple)
+      combineLatest:@[
+                      RACObserve(self, highlighted),
+                      RACObserve(self, enabled),
+                      RACObserve(self, selected),
+                      ]]
+     map:^(RACTuple* tuple)
      {
          NSNumber* isHighlighted = tuple[0];
          NSNumber* isEnabled = tuple[1];
+         NSNumber* isSelected = tuple[2];
          
          @strongify(self)
          if (![isEnabled boolValue] && self.disabledColor)
@@ -54,13 +56,17 @@
          {
              return self.highlightedColor;
          }
+         if ([isSelected boolValue] && self.selectedColor)
+         {
+             return self.selectedColor;
+         }
          return self.originalBackgroundColor;
      }];
 }
 
 - (void) setShadowRadius:(CGFloat)shadowRadius
 {
-//    self.layer.shadowRadius = shadowRadius;
+    self.layer.shadowRadius = shadowRadius;
 }
 
 - (CGFloat) shadowRadius
@@ -70,7 +76,7 @@
 
 - (void) setShadowOffset:(CGSize)shadowOffset
 {
-//    self.layer.shadowOffset = shadowOffset;
+    self.layer.shadowOffset = shadowOffset;
 }
 
 - (CGSize) shadowOffset
@@ -80,7 +86,7 @@
 
 - (void) setShadowColor:(UIColor*)shadowColor
 {
-//    self.layer.shadowColor = shadowColor.CGColor;
+    self.layer.shadowColor = shadowColor.CGColor;
 }
 
 - (UIColor*) shadowColor
@@ -90,7 +96,7 @@
 
 - (void) setShadowOpacity:(CGFloat)shadowOpacity
 {
-//    self.layer.shadowOpacity = shadowOpacity;
+    self.layer.shadowOpacity = shadowOpacity;
 }
 
 - (CGFloat) shadowOpacity

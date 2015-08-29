@@ -26,6 +26,8 @@
 - (CGFloat) animationSpeed;
 - (void) finishedOpen:(BOOL)wasAnimated;
 
+- (void) setupOpenCloseFramesInView:(UIView*)insideView;
+
 // TODO: Determine a better method than the anchor system (needs to be able to use constraints for the future)
 // TODO: Allow Sidebar to remove itself (needs to remove itself from parent array)
 // TODO: Add property for close direction and auto remove (will end up being like popup)
@@ -37,5 +39,7 @@
 
 @property(readonly) CGRect openFrame;
 @property(readonly) CGRect closedFrame;
+
+- (IBAction) toggleOpened:(id)sender;
 
 @end

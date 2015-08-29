@@ -127,26 +127,34 @@
                                                      CGRectCenterPoint(self.openFrame));
 }
 
+- (void) setupOpenCloseFramesInView:(UIView*)insideView
+{
+    [openView removeFromSuperview];
+    [closedView removeFromSuperview];
+    openView = nil;
+    closedView = nil;
+
+    CGRect openRect = [self calculateOpenedRectInView:insideView];
+    CGRect closeRect = [self calculateClosedRectInView:insideView];
+    
+    openView = [[UIView alloc] initWithFrame:openRect];
+    openView.userInteractionEnabled = NO;
+    openView.backgroundColor = [UIColor clearColor];
+    openView.autoresizingMask = self.view.autoresizingMask;
+    [insideView addSubview:openView];
+    
+    closedView = [[UIView alloc] initWithFrame:closeRect];
+    closedView.userInteractionEnabled = NO;
+    closedView.backgroundColor = [UIColor clearColor];
+    closedView.autoresizingMask = self.view.autoresizingMask;
+    [insideView addSubview:closedView];
+}
+
 - (void) openInView:(UIView*)insideView
 withViewParent:(AB_BaseViewController*)viewParent_
 inSection:(AB_SectionViewController*)sectionParent_
 {
-    {
-        CGRect openRect = [self calculateOpenedRectInView:insideView];
-        CGRect closeRect = [self calculateClosedRectInView:insideView];
-
-        openView = [[UIView alloc] initWithFrame:openRect];
-        openView.userInteractionEnabled = NO;
-        openView.backgroundColor = [UIColor clearColor];
-        openView.autoresizingMask = self.view.autoresizingMask;
-        [insideView addSubview:openView];
-
-        closedView = [[UIView alloc] initWithFrame:closeRect];
-        closedView.userInteractionEnabled = NO;
-        closedView.backgroundColor = [UIColor clearColor];
-        closedView.autoresizingMask = self.view.autoresizingMask;
-        [insideView addSubview:closedView];
-    }
+    [self setupOpenCloseFramesInView:insideView];
     
     [super openInView:insideView
        withViewParent:viewParent_
@@ -377,4 +385,9 @@ animated:(BOOL)isAnimated
 - (UIView*) sidebarView
 {
     return self.view;
+}
+
+- (IBAction) toggleOpened:(id)sender
+{
+    self.opened = !self.opened;
 }

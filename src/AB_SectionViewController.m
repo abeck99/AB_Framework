@@ -41,8 +41,7 @@
         if ( defaultController )
         {
             [contentControllers addObject:defaultController];
-            controllerDataStack = @[[defaultController getDescription]];
-            [self controllerDidChange];
+            controllerDataStack = @[];
         }
     }
     
@@ -68,6 +67,9 @@
         NSMutableArray* newButtons = currentButtons ? [currentButtons mutableCopy] : [@[] mutableCopy];
         [newButtons addObject:button];
         mutableSectionButtons[button.controllerName] = [NSArray arrayWithArray:newButtons];
+        
+        [self handleMagicButton:button];
+        
     }
     
     for (UIView* subview in view.subviews)
@@ -76,10 +78,13 @@
     }
 }
 
-- (void) showMagicButtonsIfSelected
+- (void) handleMagicButton:(AB_SelectControllerButton*)magicButton
 {
-    NSString* currentControllerName = [self currentController].key;
     
+}
+
+- (void) showMagicButtonsForKey:(id)key
+{
     for (NSString* buttonKey in [sectionButtons allKeys])
     {
         NSArray* selectButtons = sectionButtons[buttonKey];
@@ -87,10 +92,16 @@
         for (AB_SelectControllerButton* selectButton in selectButtons)
         {
             [selectButton
-             setIsSelected:[currentControllerName
+             setIsSelected:[key
                             isEqualToString:selectButton.controllerName]];
         }
     }
+}
+
+- (void) showMagicButtonsIfSelected
+{
+    id currentControllerName = [self currentController].key;
+    [self showMagicButtonsForKey:currentControllerName];
 }
 
 - (void) magicButtonSelect:(AB_SelectControllerButton*)button
@@ -107,7 +118,7 @@
          {
              c.data = self.data;
          }
-     }];
+     } withAnimation:button.animation];
 }
 
 - (void) initData
@@ -129,15 +140,14 @@
 {
     [super setupWithFrame:frame];
 
-    CGRect contentFrame = contentView.frame;
-    contentFrame.origin = CGPointMake(0.f, 0.f);
-    [[self currentController] setupWithFrame:contentFrame];
+    [[self currentController] setupWithFrame:contentView.bounds];
 
     NSMutableDictionary* mutableSectionButtons = [@{} mutableCopy];
     [self recursivelyFindButtons:self.view andAddToDictionary:mutableSectionButtons];
     sectionButtons = [NSDictionary dictionaryWithDictionary:mutableSectionButtons];
     
-    [self showMagicButtonsIfSelected];
+    [[self currentController] openInView:contentView withViewParent:self inSection:self];
+    [self controllerDidChange];
 }
 
 - (void) openInView:(UIView*)insideView
@@ -146,7 +156,6 @@
 {
     [self cancelCurrentLoading];
     [super openInView:insideView withViewParent:viewParent_ inSection:sectionParent_];
-    [[self currentController] openInView:contentView withViewParent:self inSection:self];
     [self setHighlighted];
 }
 
@@ -174,23 +183,90 @@
     currentTransitionObject = nil;
 }
 
+- (void) pushControllerWithName:(id)name allowReopen:(BOOL)allowReopen
+{
+    [self pushControllerWithName:name withConfigBlock:nil withAnimation:nil allowReopen:allowReopen];
+}
+
+- (void) pushControllerWithName:(id)name withAnimation:(id<UIViewControllerAnimatedTransitioning>)animation allowReopen:(BOOL)allowReopen
+{
+    [self pushControllerWithName:name withConfigBlock:nil withAnimation:animation allowReopen:allowReopen];
+}
+
+- (void) pushControllerWithName:(id)name withConfigBlock:(CreateControllerBlock)configurationBlock allowReopen:(BOOL)allowReopen
+{
+    [self pushControllerWithName:name withConfigBlock:configurationBlock withAnimation:nil allowReopen:allowReopen];
+}
+
 - (void) pushControllerWithName:(id)name
 {
-    [self pushControllerWithName:name withConfigBlock:nil withAnimation:nil];
+    [self pushControllerWithName:name withConfigBlock:nil withAnimation:nil allowReopen:NO];
 }
 
 - (void) pushControllerWithName:(id)name withAnimation:(id<UIViewControllerAnimatedTransitioning>)animation
 {
-    [self pushControllerWithName:name withConfigBlock:nil withAnimation:animation];
+    [self pushControllerWithName:name withConfigBlock:nil withAnimation:animation allowReopen:NO];
 }
 
 - (void) pushControllerWithName:(id)name withConfigBlock:(CreateControllerBlock)configurationBlock
 {
-    [self pushControllerWithName:name withConfigBlock:configurationBlock withAnimation:nil];
+    [self pushControllerWithName:name withConfigBlock:configurationBlock withAnimation:nil allowReopen:NO];
 }
 
 - (void) pushControllerWithName:(id)name withConfigBlock:(CreateControllerBlock)configurationBlock withAnimation:(id<UIViewControllerAnimatedTransitioning>)animation
 {
+    [self pushControllerWithName:name withConfigBlock:configurationBlock withAnimation:animation allowReopen:NO];
+}
+
+- (void) pushStateOnStack:(NSDictionary*)state
+{
+    NSMutableArray* newArray = [controllerDataStack mutableCopy];
+    if (state)
+    {
+        [newArray addObject:state];
+    }
+    
+    if ( newArray.count > MAX_BACK_MEMORY )
+    {
+        [newArray removeObjectAtIndex:0];
+    }
+    
+    controllerDataStack = [NSArray arrayWithArray:newArray];
+}
+
+- (NSDictionary*) popStateFromStack
+{
+    if (controllerDataStack.count == 0)
+    {
+        return nil;
+    }
+    
+    NSDictionary* state = [controllerDataStack lastObject];
+    NSMutableArray* newArray = [controllerDataStack mutableCopy];
+    [newArray removeLastObject];
+    controllerDataStack = [NSArray arrayWithArray:newArray];
+    
+    return state;
+}
+
+- (void) pushControllerWithName:(id)name withConfigBlock:(CreateControllerBlock)configurationBlock withAnimation:(id<UIViewControllerAnimatedTransitioning>)animation allowReopen:(BOOL)allowReopen
+{
+    [self pushControllerWithName:name withConfigBlock:configurationBlock withAnimation:animation allowReopen:allowReopen pushOnState:YES];
+}
+
+- (void) pushControllerWithName:(id)name withConfigBlock:(CreateControllerBlock)configurationBlock withAnimation:(id<UIViewControllerAnimatedTransitioning>)animation allowReopen:(BOOL)allowReopen pushOnState:(BOOL)shouldPushOnState
+{
+    if (!allowReopen && [[self currentController].key isEqual:name])
+    {
+        if (configurationBlock)
+        {
+            configurationBlock([self currentController]);
+        }
+        return;
+    }
+    
+    animation = animation ? animation : [self defaultAnimationTransitioningTo:name];
+    
     ConfirmBlock switchBlock = ^(BOOL confirmed)
     {
         if (!confirmed)
@@ -198,7 +274,9 @@
             return;
         }
         
-        NSDictionary* lastDescription = [[self currentController] getDescription];
+        NSDictionary* lastState = shouldPushOnState
+        ? [[self currentController] getDescription]
+        : nil;
         
         AB_Controller sectionController = [getController() controllerForTag:name];
         [sectionController setupWithFrame:self.contentView.bounds];
@@ -206,23 +284,7 @@
         if ( animation )
         {
             [self replaceController:sectionController withAnimation:animation completeBlock:^{
-                NSMutableArray* newArray = [controllerDataStack mutableCopy];
-                
-                // TODO: This flow can be improved instead of adding to the stack on entry and exit, it makes sense to push on the stack on exit, so the most up to date data is sent
-                if (lastDescription)
-                {
-                    [newArray removeLastObject];
-                    [newArray addObject:lastDescription];
-                }
-                
-                [newArray addObject:[sectionController getDescription]];
-                
-                if ( newArray.count > MAX_BACK_MEMORY )
-                {
-                    [newArray removeObjectAtIndex:0];
-                }
-                
-                controllerDataStack = [NSArray arrayWithArray:newArray];
+                [self pushStateOnStack:lastState];
             }];
             
             if (configurationBlock)
@@ -239,23 +301,7 @@
                 configurationBlock(sectionController);
             }
             
-            NSMutableArray* newArray = [controllerDataStack mutableCopy];
-            
-            // TODO: Copy/paste from above...
-            if (lastDescription)
-            {
-                [newArray removeLastObject];
-                [newArray addObject:lastDescription];
-            }
-            
-            [newArray addObject:[sectionController getDescription]];
-            
-            if ( newArray.count > MAX_BACK_MEMORY )
-            {
-                [newArray removeObjectAtIndex:0];
-            }
-            
-            controllerDataStack = [NSArray arrayWithArray:newArray];
+            [self pushStateOnStack:lastState];
         }
     };
     
@@ -272,21 +318,17 @@
 
 - (void) popControllerWithAnimation:(id<UIViewControllerAnimatedTransitioning>)animation
 {
-    if ( controllerDataStack.count > 1 )
+    NSDictionary* state = [self popStateFromStack];
+    if (state)
     {
-        NSMutableArray* newArray = [controllerDataStack mutableCopy];
-        
-        [newArray removeLastObject];
-        NSDictionary* lastViewDict = [newArray lastObject];
-        [newArray removeLastObject];
-        controllerDataStack = [NSArray arrayWithArray:newArray];
-        
-        [self pushControllerWithName:lastViewDict[@"tag"]
-                     withConfigBlock:^(AB_Controller controller) {
-                         [controller applyDescription:lastViewDict];
-                         [controller poppedBack];
-                     }
-                       withAnimation:animation];
+        [self pushControllerWithName:state[@"tag"]
+                     withConfigBlock:^(AB_Controller controller)
+        {
+            [controller applyDescription:state];
+            [controller poppedBack];
+        }
+                       withAnimation:animation
+         allowReopen:YES pushOnState:NO];
     }
 }
 
@@ -322,7 +364,7 @@
 
         [[NSOperationQueue mainQueue] addOperationWithBlock:^{
             newController = [getController() controllerForTag:controllerName];
-            wrappedController = [[AB_WrappedViewController alloc] initWithNibName:@"EmptyWrapperView" bundle:[NSBundle mainBundle] defaultController:nil];
+            wrappedController = [[AB_WrappedViewController alloc] initWithNibName:@"EmptyWrapperView" bundle:[NSBundle bundleForClass:[self class]] defaultController:nil];
             wrappedController.lastSectionController = self;
             
         }];
@@ -372,6 +414,7 @@
 - (void) replaceController:(AB_Controller)newController
 {
     [self cancelCurrentLoading];
+    [self controllerWillChange:newController];
     if ( [contentControllers count] > 0 )
     {
         [[self currentController] closeView];        
@@ -392,6 +435,7 @@
 - (void) replaceController:(AB_Controller)newController withAnimation:(id<UIViewControllerAnimatedTransitioning>)animation completeBlock:(void (^)())completeBlock
 {
     [self cancelCurrentLoading];
+    [self controllerWillChange:newController];
     
     AB_TransitionContextObject* transitionObject = nil;
     
@@ -487,6 +531,16 @@
 - (NSUInteger) numPushedViews
 {
     return contentControllers.count;
+}
+
+- (void) controllerWillChange:(AB_Controller)newController
+{
+    [self showMagicButtonsForKey:newController.key];
+}
+
+- (id<UIViewControllerAnimatedTransitioning>) defaultAnimationTransitioningTo:(id)key
+{
+    return nil;
 }
 
 - (void) controllerDidChange
