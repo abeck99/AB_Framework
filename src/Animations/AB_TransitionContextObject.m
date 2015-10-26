@@ -23,8 +23,8 @@
         toController = _toController;
         contentView = _contentView;
         animation = _animation;
-        cancelBlock = _cancelBlock;
-        completeBlock = _completeBlock;
+        cancelBlocks = @[[_cancelBlock copy]];
+        completedBlocks = @[[_completeBlock copy]];
     }
     
     return self;
@@ -84,13 +84,19 @@
 // controller state at the end of the transition.
 - (void) completeTransition:(BOOL)didComplete
 {
-    if ( didComplete )
+    if (didComplete)
     {
-        completeBlock(self);
+        for (TransitionCompleteBlock block in completedBlocks)
+        {
+            block(self);
+        }
     }
     else
     {
-        cancelBlock();
+        for (TransitionCancelledBlock block in cancelBlocks)
+        {
+            block();
+        }
     }
 }
 
@@ -147,6 +153,25 @@
     }
     
     return CGRectZero;
+}
+
+- (void) addCompleteBlock:(TransitionCompleteBlock)completeBlock
+{
+    NSMutableArray* mutableBlocks = [completedBlocks mutableCopy];
+    [mutableBlocks addObject:[completeBlock copy]];
+    completedBlocks = [NSArray arrayWithArray:mutableBlocks];
+}
+
+- (void) addCancelBlock:(TransitionCancelledBlock)cancelBlock
+{
+    NSMutableArray* mutableBlocks = [cancelBlocks mutableCopy];
+    [mutableBlocks addObject:[cancelBlock copy]];
+    cancelBlocks = [NSArray arrayWithArray:mutableBlocks];
+}
+
+- (AB_Controller) toController
+{
+    return toController;
 }
 
 @end

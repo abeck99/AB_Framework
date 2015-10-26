@@ -12,73 +12,113 @@
 #import "Underscore.h"
 #import "AB_Popup.h"
 
+@interface AB_BaseViewController()
+{
+    BOOL _open;
+    NSLayoutConstraint* heightConstraint;
+    
+    BOOL ignoreNextLayout;
+    
+    RACSubject* openSubject;
+    RACSubject* closeSubject;
+}
+
+@end
+
+
 @implementation AB_BaseViewController
 
-@synthesize isOpen;
++ (NSMutableArray*) existingControllers
+{
+    static dispatch_once_t pred;
+    static NSMutableArray* existingControllers = nil;
+    
+    dispatch_once(&pred, ^{
+        existingControllers = [@[] mutableCopy];
+    });
+    
+    return existingControllers;
+}
+
 @synthesize key;
+
+- (id) initWithNibName:(NSString *)nibNameOrNil
+                bundle:(NSBundle *)nibBundleOrNil
+{
+    if ( self = [super initWithNibName:nibNameOrNil bundle:nibBundleOrNil] )
+    {
+        sidebars = @[];
+        openSubject = [RACSubject subject];
+        closeSubject = [RACSubject subject];
+    }
+    
+    return self;
+}
 
 - (void)viewWillAppear:(BOOL)animated
 {
     [super viewWillAppear:animated];
     
-    sidebars = sidebars ? sidebars : @[];
-    
-    [self setupScrollViews];
-    
-    for ( UIView* view in roundedViews )
-    {
-        view.clipsToBounds = YES;
-        view.layer.cornerRadius = 5.f;
-    }
-    
-    for ( UIView* view in circleViews )
-    {
-        view.clipsToBounds = YES;
-        view.layer.cornerRadius = view.frame.size.width/2.f;
-    }
-    
-    for ( UIView* view in gradientViews )
-    {
-        CAGradientLayer *gradient = [CAGradientLayer layer];
-        gradient.frame = view.bounds;
-        gradient.colors = @[(id) [[UIColor blackColor] CGColor], (id) [[UIColor grayColor] CGColor]];
-        [view.layer insertSublayer:gradient atIndex:0];
-    }
-    
-    for ( UIView* view in rotatedViews )
-    {
-        CGRect originalFrame = view.frame;
-        view.center = CGPointMake(0.f, 0.f);
-        view.transform = CGAffineTransformRotate(CGAffineTransformIdentity, M_PI/-2.f);
-        
-        CGRect newFrame = view.frame;
-        newFrame.origin = originalFrame.origin;
-        view.frame = newFrame;
-    }
-
     // TODO: Figure out cocoapods and google analytics dependency
     // self.screenName = [self setScreenName];
 }
+
+- (void) viewDidLayoutSubviews
+{
+    [super viewDidLayoutSubviews];
+    
+//    if (ignoreNextLayout)
+//    {
+//        ignoreNextLayout = NO;
+//        return;
+//    }
+    
+//    if (heightDefiningView)
+//    {
+//        ignoreNextLayout = YES;
+//        CGRect selfSize = self.view.frame;
+//        selfSize.size.height = heightDefiningView.frame.size.height;
+//        self.view.frame = selfSize;
+//    }
+}
+
+- (CGFloat) height
+{
+    return heightDefiningView
+    ? heightDefiningView.frame.size.height
+    : self.view.frame.size.height;
+}
+
+//- (void) viewDidAppear:(BOOL)animated
+//{
+//    [super viewDidAppear:animated];
+//    
+//    if (heightDefiningView)
+//    {
+//        [self.view.superview addConstraint:[NSLayoutConstraint
+//                                            constraintWithItem:self.view
+//                                            attribute:NSLayoutAttributeHeight
+//                                            relatedBy:0
+//                                            toItem:heightDefiningView
+//                                            attribute:NSLayoutAttributeHeight
+//                                            multiplier:1.f
+//                                            constant:0.f]];
+//    }
+//
+//}
 
 - (NSString*) setScreenName
 {
     return nil;
 }
 
-- (void) setupWithFrame:(CGRect)frame
-{
-    sidebars = sidebars ? sidebars : @[];
-    self.view.frame = frame;
-}
-
 - (void) openInView:(UIView*)insideView
-     withViewParent:(AB_BaseViewController*)viewParent_
-          inSection:(AB_SectionViewController*)sectionParent_;
+     withViewParent:(AB_Controller)viewParent_
+          inSection:(AB_Section)sectionParent_
 {
     sectionParent = sectionParent_;
-    viewParent = viewParent_;
     
-    [viewParent addChildViewController:self];
+    [viewParent_ addChildViewController:self];
     
     UIView* topPopupView = (UIView*) [insideView popups].first;
     
@@ -101,6 +141,8 @@
         ? sidebarView
         : topPopupView;
     
+    [self.view setTranslatesAutoresizingMaskIntoConstraints:NO];
+    
     if (aboveView)
     {
         [insideView insertSubview:self.view belowSubview:aboveView];
@@ -110,25 +152,108 @@
         [insideView addSubview:self.view];
     }
 
-    [self didMoveToParentViewController:viewParent];
+    [self didMoveToParentViewController:viewParent_];
     
-    isOpen = YES;
+    UIView* subview = self.view;
+    
+    [insideView addConstraints:[NSLayoutConstraint
+                                constraintsWithVisualFormat:@"H:|-0-[subview]-0-|"
+                                options:NSLayoutFormatDirectionLeadingToTrailing
+                                metrics:nil
+                                views:NSDictionaryOfVariableBindings(subview)]];
+    
+    [insideView addConstraints:[NSLayoutConstraint
+                                constraintsWithVisualFormat:@"V:|-0-[subview]-0-|"
+                                options:NSLayoutFormatDirectionLeadingToTrailing
+                                metrics:nil
+                                views:NSDictionaryOfVariableBindings(subview)]];
+
+    [insideView updateConstraints];
+    
+//        self.view.translatesAutoresizingMaskIntoConstraints = NO;
+//        self.view.frame = insideView.bounds;
+    
+    [insideView setNeedsLayout];
+    [insideView layoutIfNeeded];
+    
+    [self setOpen:YES];
+    [openSubject sendNext:self];
+}
+
+- (void) bind
+{
+    NSMutableArray* existingControllers = [AB_BaseViewController existingControllers];
+    [existingControllers addObject:self];
+    
+//    NSLog(@"+ %lu", (unsigned long)existingControllers.count);
+    [self showExistingControllers];
+}
+
+- (void) showExistingControllers
+{
+    static NSUInteger i = 0;
+    i = (i+1)%100;
+    
+    if (i==0)
+    {
+        for (AB_BaseViewController* bc in [AB_BaseViewController existingControllers])
+        {
+            NSLog(@"\t%@\t%p\t%@", bc.sourceString, bc, bc.key);
+        }
+    }
 }
 
 - (void) closeView
+{
+    NSMutableArray* existingControllers = [AB_BaseViewController existingControllers];
+//    if (![existingControllers containsObject:self])
+//    {
+//        NSLog(@"OBJ NMOT FOUND! %@", self.key);
+//    }
+    [existingControllers removeObject:self];
+    
+//    NSLog(@"+ %lu", (unsigned long)existingControllers.count);
+//    [self showExistingControllers];
+
+    [self willMoveToParentViewController:nil];
+    [self.view removeFromSuperview];
+    [self removeFromParentViewController];
+    
+    [self setOpen:NO];
+    sectionParent = nil;
+    
+    [closeSubject sendNext:self];
+    [self returnToControllerPool];
+}
+
+- (void) returnToControllerPool
+{
+    [getController() returnControllerToPool:self];
+}
+
+- (void) dealloc
 {
     for ( UIGestureRecognizer* rec in [self.view.gestureRecognizers copy] )
     {
         [self.view removeGestureRecognizer:rec];
     }
-    
-    [self willMoveToParentViewController:nil];
-    [self.view removeFromSuperview];
-    [self removeFromParentViewController];
-    
-    isOpen = NO;
-    viewParent = nil;
-    sectionParent = nil;
+}
+
+- (BOOL) open
+{
+    return _open;
+}
+
+- (void) setOpen:(BOOL)open
+{
+    [self willChangeValueForKey:@"open"];
+    _open = open;
+    [self didChangeValueForKey:@"open"];
+}
+
++ (BOOL)automaticallyNotifiesObserversOfOpen
+{
+    return NO;
 }
 
 - (UIImage*) image:(UIImage*)image tintedWithColor:(UIColor*)tintColor
@@ -152,20 +277,10 @@
     return retImage;
 }
 
-- (void) pushOnParent:(NSString*)controllerName
-{
-    [self pushOnParent:controllerName withConfigBlock:nil];
-}
-
-- (void) pushOnParent:(NSString*)controllerName withConfigBlock:(CreateControllerBlock)configurationBlock
-{
-    [sectionParent pushControllerWithName:controllerName withConfigBlock:configurationBlock];
-}
-
 - (id<AB_SideBarProtocol>) addSidebarAndOpen:(id)name
 {
     id<AB_SideBarProtocol> sidebar = [self addSidebar:name];
-    sidebar.opened = YES;
+    sidebar.sliderOpen = YES;
     return sidebar;
 }
 
@@ -224,138 +339,33 @@
     .unwrap;
 }
 
-- (id) data
-{
-    return _data;
-}
-
-- (void) setData:(id)data
-{
-    if ( !data || [data isKindOfClass:[[self class] expectedClass]] )
-    {
-        _data = data;
-        [self dataUpdated];
-    }
-    else
-    {
-        @throw [NSException exceptionWithName:NSInvalidArgumentException
-                                       reason:[NSString stringWithFormat:@"Wrong class of data %@ sent to object expected %@", [data class], [[self class] expectedClass]]
-                                     userInfo:nil];
-    }
-}
-
-- (void) pushOnNavigationController:(id)controllerName withConfigBlock:(CreateControllerBlock)configurationBlock
-{
-    [self pushOnNavigationController:controllerName withConfigBlock:configurationBlock animated:YES];
-}
-
-- (void) pushOnNavigationController:(id)controllerName withConfigBlock:(CreateControllerBlock)configurationBlock animated:(BOOL)animated
-{
-    [sectionParent pushOnNavigationController:controllerName
-                              withConfigBlock:configurationBlock
-                                     animated:animated];
-}
-
-- (void) jumpToOrigin
-{
-    CGRect frame = self.view.frame;
-    
-    [UIView beginAnimations:nil context:nil];
-    [UIView setAnimationDuration:0.2f];
-    frame.origin.y = self.view.bounds.origin.y;
-    self.view.frame = frame;
-    
-    [UIView commitAnimations];
-}
-
-- (void) jumpToElement:(UIView*)element
-{
-    CGRect frame = self.view.frame;
-    
-    CGPoint originInMainView = [self.view convertPoint:element.frame.origin fromView:element.superview];
-    
-    [UIView beginAnimations:nil context:nil];
-    [UIView setAnimationDuration:0.2f];
-    
-    frame.origin.y = self.view.bounds.origin.y - originInMainView.y;
-    self.view.frame = frame;
-    
-    [UIView commitAnimations];
-
-//    
-//    float rMoveDt = self.view.bounds.size.height - rPos_Y;
-//    if( rMoveDt < 350 ) {
-//        
-//        rMoveDt = 350 - rMoveDt;
-//        
-//        [UIView beginAnimations:nil context:nil];
-//        [UIView setAnimationDuration:0.2f];
-//        
-//        frame.origin.y = self.view.bounds.origin.y - rMoveDt;
-//        self.view.frame = frame;
-//        
-//        [UIView commitAnimations];
-//    }
-//    else
-//    {
-//        [self jumpToOrigin];
-//    }
-}
-
-- (void) dataUpdated
-{
-}
-
 - (void) attemptToReopen
 {
-
-}
-
-+ (Class) expectedClass
-{
-    return [NSDictionary class];
-}
-
-- (void) poppedAwayWhileStillOpen
-{
     
 }
 
-- (void) poppedBackWhileStillOpen
+- (void) addRetainObject:(id)obj
 {
+    retainObjects = retainObjects ? retainObjects : @[];
     
-}
-
-
-- (void) resetScrollViewContentSizes
-{
-    for ( int i = 0; i < scrollViews.count; ++i )
+    if ([retainObjects containsObject:obj])
     {
-        UIScrollView* scrollView = [scrollViews objectAtIndex:i];
-        UIView* contentView = [scrollContentViews objectAtIndex:i];
-        scrollView.contentSize = contentView.frame.size;
-    }
-}
-
-- (void) setupScrollViews
-{
-    if ( scrollViews.count != scrollContentViews.count )
-    {
-        [NSException raise:@"XIBSetupError" format:@"Invalid ScrollView setup!"];
+        return;
     }
     
-    for ( int i = 0; i < scrollViews.count; ++i )
+    NSMutableArray* mutableRetainObjects = [retainObjects mutableCopy];
+    if (!mutableRetainObjects)
     {
-        UIScrollView* scrollView = [scrollViews objectAtIndex:i];
-        UIView* contentView = [scrollContentViews objectAtIndex:i];
-        
-        CGRect contentFrame = contentView.frame;
-        contentFrame.size.width = scrollView.frame.size.width;
-        contentFrame.origin = CGPointZero;
-        
-        [scrollView addSubview:contentView];
-        scrollView.contentSize = contentView.frame.size;
+        mutableRetainObjects = [@[] mutableCopy];
     }
+    
+    [mutableRetainObjects addObject:obj];
+    retainObjects = [NSArray arrayWithArray:mutableRetainObjects];
+}
+
+- (IBAction) back:(id)sender
+{
+    [sectionParent popController];
 }
 
 - (IBAction) debugLayout:(id)sender
@@ -364,33 +374,23 @@
 }
 
 - (void) allowChangeController:(ConfirmBlock)confirmBlock
+                  toController:(AB_Controller)newController
 {
-    confirmBlock(YES);
+    confirmBlock(![self.key isEqual:newController.key]);
 }
 
 - (NSDictionary*) getDescription
 {
     return @{
              @"tag": self.key,
-             @"data": _data ? _data : [NSNull null]
              };
 }
 
 - (void) applyDescription:(NSDictionary*)dictionary
 {
-    id data = dictionary[@"data"];
-    if (data != [NSNull null])
-    {
-        self.data = data;
-    }
 }
 
-- (void) poppedBack
-{
-    
-}
-
-- (AB_SectionViewController*) sectionParent
+- (AB_Section) sectionParent
 {
     return sectionParent;
 }
@@ -398,6 +398,16 @@
 - (NSArray*) sidebars
 {
     return sidebars;
+}
+
+- (RACSignal*) openSignal
+{
+    return openSubject;
+}
+
+- (RACSignal*) closeSignal
+{
+    return closeSubject;
 }
 
 @end

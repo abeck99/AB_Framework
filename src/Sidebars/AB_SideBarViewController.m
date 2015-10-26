@@ -12,11 +12,18 @@
 #import "ReactiveCocoa.h"
 #import "AB_MixGesturesDelegate.h"
 #import "AB_UIView+AutoresizingConvinence.h"
+#include "easing.h"
 
 @interface AB_SideBarViewController()
 {
     AB_MixGesturesDelegate* gestureDelegate;
+    BOOL ignoreLayoutChanges;
+    RACDisposable* animationDisposable;
+    
+    CGFloat _openAmount;
 }
+
+@property(assign) CGFloat openAmount;
 
 @end
 

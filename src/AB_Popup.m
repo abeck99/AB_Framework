@@ -5,7 +5,7 @@
 //
 
 #import "AB_Popup.h"
-#import <Underscore.h>
+#import "Underscore.h"
 
 #define POPUP_DEBUG 0
 
@@ -57,7 +57,8 @@
         expandableText.contentInset = UIEdgeInsetsMake(0.0, 0, 0.0, 0);
         expandableText.contentOffset = CGPointMake(0.f, 0.f);
         expandableText.textContainerInset = UIEdgeInsetsMake(0.0, 0, 0.0, 0);
-        
+        expandableText.textContainer.lineFragmentPadding = 0.f;
+
         CGSize expectedLabelSize = [contentString boundingRectWithSize:
                                     CGSizeMake(expandableText.frame.size.width - 10.f, CGFLOAT_MAX)
                                                         options:(NSStringDrawingUsesLineFragmentOrigin|NSStringDrawingUsesFontLeading)

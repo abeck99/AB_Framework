@@ -21,6 +21,10 @@
 
 + (instancetype)noResubscriptionIf:(RACSignal*)ifSignal then:(RACSignal*)thenSignal else:(RACSignal*)elseSignal;
 
+- (instancetype) promise;
+- (instancetype) extractErrorsToBlock:(void (^)(NSError *error))errorBlock;
+- (instancetype) noop;
+
 @end
 
 @interface NSObject(AB_ReactiveCocoaExtensions)

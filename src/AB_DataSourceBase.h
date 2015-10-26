@@ -8,6 +8,7 @@
 #import "AB_FilteredArray.h"
 #import <UIKit/UIKit.h>
 #import "ReactiveCocoa.h"
+#import "AB_DataContainer.h"
 
 @interface AB_SectionInfo : NSObject
 
@@ -20,6 +21,8 @@
 @property(strong) NSURL* nextURL;
 @property(assign) BOOL retainMultiCellSize;
 @property(assign) BOOL equalSizeColumns;
+@property(strong) AB_Controller headerController;
+@property(weak) AB_Controller headerControllerParent;
 @property(strong) UIView* headerView;
 
 - (int) numRows;

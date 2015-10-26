@@ -11,7 +11,7 @@
 @protocol AB_SideBarProtocol
 
 - (void) setupSidebarInController:(AB_BaseViewController*)controller;
-@property(assign) BOOL opened;
+@property(assign) BOOL sliderOpen;
 
 - (int) priority;
 - (UIView*) sidebarView;
@@ -19,3 +19,6 @@
 @end
 
 // TODO: Add typedef for AB_BaseViewController<AB_SidebarProtocol> (maybe AB_Controller<AB_SidebarProtocol>)
+
+
+CGFloat EasingFunction(CGFloat p);

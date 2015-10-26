@@ -1,6 +1,6 @@
 Pod::Spec.new do |s|
 	s.name		= 'AB_Framework'
-	s.version	= '0.1.0'
+	s.version	= '0.2.0'
 	s.summary	= 'A (currently) highly unstable library for building view based applications in iOS'
 	s.author	= {
 		'Andrew Beck' => 'abeck99@gmail.com'
@@ -17,10 +17,12 @@ Pod::Spec.new do |s|
 	s.resources = 'src/**/*.{xib}'
 	s.requires_arc = true
 	s.homepage = 'https://github.com/abeck99/AB_Framework'
-	s.dependency 'ReactiveCocoa'
+	s.dependency 'ReactiveCocoa', '~> 2.5'
 	s.dependency 'Mantle'
 	s.dependency 'LoremIpsum'
 	s.dependency 'Underscore.m'
+	s.dependency 'pop', '~> 1.0'
+	s.dependency 'VCTransitionsLibrary'
 
 	s.ios.deployment_target = '8.0'
 end

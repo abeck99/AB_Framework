@@ -12,11 +12,18 @@
 #import "ReactiveCocoa.h"
 #import "AB_MixGesturesDelegate.h"
 #import "AB_UIView+AutoresizingConvinence.h"
+#include "easing.h"
 
 @interface AB_SideBarSectionViewController()
 {
     AB_MixGesturesDelegate* gestureDelegate;
+    BOOL ignoreLayoutChanges;
+    RACDisposable* animationDisposable;
+    
+    CGFloat _openAmount;
 }
+
+@property(assign) CGFloat openAmount;
 
 @end
 
@@ -25,3 +32,16 @@
 #include "AB_SidebarContentM.inl"
 
 @end
+
+CGFloat EasingFunction(CGFloat p)
+{
+    if(p < 0.5)
+    {
+        return 8 * p * p * p * p;
+    }
+    else
+    {
+        CGFloat f = (p - 1);
+        return -8 * f * f * f * f + 1;
+    }
+}

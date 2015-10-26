@@ -12,6 +12,7 @@
 
 @interface AB_DataSourceBase()
 {
+    NSMutableArray* mutableOpenHeaderControllers;
     RACSubject* updateSubject;
 }
 
@@ -67,6 +68,7 @@
 - (void) setupWithTableView:(UITableView*)theTableView
 {
     updateSubject = [RACSubject subject];
+    mutableOpenHeaderControllers = [@[] mutableCopy];
     
     tableView = theTableView;
     nibs = @{};
@@ -210,25 +212,73 @@
         
         if (section.headerView.superview == view)
         {
+            if (section.headerController.open)
+            {
+                NSLog(@"OPEN");
+            }
             return;
         }
 
         CGRect f = section.headerView.frame;
         f.size.width = self.tableView.frame.size.width;
-        section.headerView.frame = f;
-
-        if ([view isKindOfClass:[UITableViewHeaderFooterView class]])
+        
+        if (section.headerController)
         {
-//            UITableViewHeaderFooterView* builtInView = (UITableViewHeaderFooterView*)view;
-//            builtInView.contentView.backgroundColor = [UIColor clearColor];
-            [view addSubview:section.headerView];
+            [section.headerController openInView:view
+                                  withViewParent:section.headerControllerParent
+                                       inSection:nil];
+            
+            [mutableOpenHeaderControllers addObject:section.headerController];
         }
         else
         {
-            view.backgroundColor = [UIColor clearColor];
-            [view addSubview:section.headerView];
+            section.headerView.frame = f;
+
+            if ([view isKindOfClass:[UITableViewHeaderFooterView class]])
+            {
+    //            UITableViewHeaderFooterView* builtInView = (UITableViewHeaderFooterView*)view;
+    //            builtInView.contentView.backgroundColor = [UIColor clearColor];
+                [view addSubview:section.headerView];
+            }
+            else
+            {
+                view.backgroundColor = [UIColor clearColor];
+                [view addSubview:section.headerView];
+            }
         }
     }
+}
+
+- (void)tableView:(UITableView *)tableView didEndDisplayingHeaderView:(UIView *)view forSection:(NSInteger)sectionNum
+{
+    AB_Controller controllerToClose = nil;
+    
+    for (AB_Controller c in mutableOpenHeaderControllers)
+    {
+        for (UIView* v in view.subviews)
+        {
+            if (c.view == v)
+            {
+                controllerToClose = controllerToClose;
+            }
+        }
+    }
+    
+    [controllerToClose closeView];
+    [mutableOpenHeaderControllers removeObject:controllerToClose];
+    
+//    if (sections.count <= sectionNum)
+//    {
+//        NSArray* subviews = view.subviews;
+//        NSLog(@"A PROBLEM ARISES! %@", subviews);
+//        return;
+//    }
+//    
+//    AB_SectionInfo* section = [self section:(int)sectionNum];
+//    if (section.headerController)
+//    {
+//        [section.headerController closeView];
+//    }
 }
 
 - (CGFloat)tableView:(UITableView *)tableView heightForHeaderInSection:(NSInteger)sectionNum
@@ -301,8 +351,13 @@
     return 0;
 }
 
-- (CGFloat)tableView:(UITableView *)tableView heightForRowAtIndexPath:(NSIndexPath *)indexPath
+- (CGFloat)tableView:(UITableView *)_tableView heightForRowAtIndexPath:(NSIndexPath *)indexPath
 {
+    if (_tableView.frame.size.height < 1.f)
+    {
+        return 0.f;
+    }
+    
     AB_SectionInfo* section = [self section:(int) [indexPath section]];
     
     if ( section.numCellsPerRow == 0 )
@@ -341,6 +396,11 @@
 - (void) setupCell:(UIView*)cell withData:(id)data dataIndexPath:(NSIndexPath*)indexPath
 {
     
+}
+
+- (void)tableView:(UITableView *)tableView didEndDisplayingCell:(UITableViewCell *)cell forRowAtIndexPath:(NSIndexPath*)indexPath
+{
+    [cell prepareForReuse];
 }
 
 - (UITableViewCell*) tableView:(UITableView*)theTableView cellForRowAtIndexPath:(NSIndexPath*)indexPath

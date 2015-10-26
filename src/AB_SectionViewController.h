@@ -8,22 +8,18 @@
 #import "AB_BaseViewController.h"
 #import "AB_SelectControllerButton.h"
 
-@interface AB_SectionViewController : AB_BaseViewController
+@interface AB_SectionViewController : AB_BaseViewController<AB_SectionContainer>
 {
     IBOutlet UIView* contentView;
     
     NSMutableArray* contentControllers;
-    
-    NSOperationQueue* controllerLoadQueue;
     
     NSNumber* currentlyLoading;
     
     id sectionSyncObject;
     
     IBOutlet UIView* triangleView;
-
-    NSArray* controllerDataStack;
-    
+   
     id<UIViewControllerContextTransitioning> currentTransitionObject;
 
     NSDictionary* sectionButtons;
@@ -36,26 +32,48 @@
 - (AB_Controller) currentController;
 
 - (void) pushControllerWithName:(id)name;
-- (void) pushControllerWithName:(id)name withAnimation:(id<UIViewControllerAnimatedTransitioning>)animation;
-- (void) pushControllerWithName:(id)name withConfigBlock:(CreateControllerBlock)configurationBlock;
-- (void) pushControllerWithName:(id)name withConfigBlock:(CreateControllerBlock)configurationBlock withAnimation:(id<UIViewControllerAnimatedTransitioning>)animation;
+- (void) pushControllerWithName:(id)name
+                  withAnimation:(id<UIViewControllerAnimatedTransitioning>)animation;
+- (void) pushControllerWithName:(id)name
+                withConfigBlock:(CreateControllerBlock)configurationBlock;
+- (void) pushControllerWithName:(id)name
+                withConfigBlock:(CreateControllerBlock)configurationBlock
+                  withAnimation:(id<UIViewControllerAnimatedTransitioning>)animation;
+- (void) pushControllerWithName:(id)name
+                  withAnimation:(id<UIViewControllerAnimatedTransitioning>)animation
+                    pushOnState:(BOOL)shouldPushOnState;
 
-- (void) pushControllerWithName:(id)name allowReopen:(BOOL)allowReopen;
-- (void) pushControllerWithName:(id)name withAnimation:(id<UIViewControllerAnimatedTransitioning>)animation allowReopen:(BOOL)allowReopen;
-- (void) pushControllerWithName:(id)name withConfigBlock:(CreateControllerBlock)configurationBlock allowReopen:(BOOL)allowReopen;
-- (void) pushControllerWithName:(id)name withConfigBlock:(CreateControllerBlock)configurationBlock withAnimation:(id<UIViewControllerAnimatedTransitioning>)animation allowReopen:(BOOL)allowReopen;
+- (void) pushController:(AB_Controller)sectionController;
+- (void) pushController:(AB_Controller)sectionController
+              forceOpen:(BOOL)forceOpen
+            pushOnState:(BOOL)shouldPushOnState;
+- (void) pushController:(AB_Controller)sectionController
+        withConfigBlock:(CreateControllerBlock)configurationBlock;
+- (void) pushController:(AB_Controller)sectionController
+          withAnimation:(id<UIViewControllerAnimatedTransitioning>)animation;
+- (void) pushController:(AB_Controller)sectionController
+        withConfigBlock:(CreateControllerBlock)configurationBlock
+          withAnimation:(id<UIViewControllerAnimatedTransitioning>)animation;
+- (void) pushController:(AB_Controller)sectionController
+        withConfigBlock:(CreateControllerBlock)configurationBlock
+          withAnimation:(id<UIViewControllerAnimatedTransitioning>)animation
+              forceOpen:(BOOL)forceOpen
+            pushOnState:(BOOL)shouldPushOnState;
 
-- (void) handleMagicButton:(AB_SelectControllerButton*)magicButton;
-
-- (id<UIViewControllerAnimatedTransitioning>) defaultAnimationTransitioningTo:(id)key;
+@property(readonly) BOOL canPopController;
 - (void) popController;
 - (void) popControllerWithAnimation:(id<UIViewControllerAnimatedTransitioning>)animation;
 
+- (id<UIViewControllerAnimatedTransitioning>) defaultAnimationTransitioningTo:(id)key;
+
 - (NSUInteger) numPushedViews;
-- (void) setHighlighted;
 - (void) controllerWillChange:(AB_Controller)newController;
 - (void) controllerDidChange;
 
+- (void) momentOfOverlapInView:(UIView*)parentView;
+
 @property(readonly) UIView* contentView;
+
+- (void) clearBackHistory;
 
 @end

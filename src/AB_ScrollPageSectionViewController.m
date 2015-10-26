@@ -19,9 +19,9 @@
 
 @implementation AB_ScrollPageSectionViewController
 
-- (void) setupWithFrame:(CGRect)frame
+- (void) bind
 {
-    [super setupWithFrame:frame];
+    [super bind];
     
     scrollContent = [[UIView alloc] initWithFrame:scrollView.bounds];
     scrollContent.userInteractionEnabled = YES;
@@ -38,7 +38,6 @@
     for ( NSDictionary* controllerType in [self controllers] )
     {
         [self loadController:controllerType[@"name"]
-                    withData:[controllerType objectForKey:@"data"] ? [controllerType objectForKey:@"data"] : nil
                      atIndex:index];
         ++index;
     }
@@ -63,7 +62,7 @@
     scrollView.contentSize = scrollContentFrame.size;
 }
 
-- (void) loadController:(id)controllerName withData:(id)data atIndex:(int)index
+- (void) loadController:(id)controllerName atIndex:(int)index
 {
     [self expandScrollContentTo:controllers.count + 1];
     
@@ -72,12 +71,9 @@
     CGRect newPageFrame = scrollView.bounds;
     newPageFrame.origin.x = index * scrollView.bounds.size.width;
     
-    [page setupWithFrame:newPageFrame];
     [page openInView:scrollContent
       withViewParent:self
            inSection:self];
-    
-    page.data = data;
     
     NSMutableArray* mutableControllers = [controllers mutableCopy];
     [mutableControllers addObject:page];

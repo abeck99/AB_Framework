@@ -8,6 +8,12 @@
 
 #import <UIKit/UIKit.h>
 
+@protocol AB_TableView
+
+- (void) prepareForReuse;
+
+@end
+
 @interface AB_MultiTableViewCell : UITableViewCell
 {
     IBOutlet UIView* realContentView;

@@ -6,40 +6,93 @@
 
 #import <Foundation/Foundation.h>
 #import <UIKit/UIKit.h>
+#import "ReactiveCocoa.h"
 
 @class AB_SectionViewController;
 @class AB_BaseViewController;
 
 typedef void (^ConfirmBlock)(BOOL confirmed);
 
+@protocol AB_DataContainer;
+typedef UIViewController<AB_DataContainer>* AB_Controller;
+
+@protocol AB_SectionContainer;
+typedef NSObject<AB_SectionContainer>* AB_Section;
+
+// TODO: This has completely changed from the original data container protocol and should be renamed accordingly
 @protocol AB_DataContainer <NSObject>
 
-- (void) setData:(id)setData;
-- (id) data;
-+ (Class) expectedClass;
-
-- (void) setupWithFrame:(CGRect)frame;
 - (void) openInView:(UIView*)insideView
-     withViewParent:(AB_BaseViewController*)viewParent_
-          inSection:(AB_SectionViewController*)sectionParent_;
+     withViewParent:(AB_Controller)viewParent_
+          inSection:(AB_Section)sectionParent_;
 - (void) closeView;
 
 - (void) attemptToReopen;
 
-// TODO: Get rid of this stupid stuff
-- (void) poppedAwayWhileStillOpen;
-- (void) poppedBackWhileStillOpen;
-
-// TODO: Add popped away
-- (void) poppedBack;
-
 - (NSDictionary*) getDescription;
 - (void) applyDescription:(NSDictionary*)dictionary;
-- (void) allowChangeController:(ConfirmBlock)confirmBlock;
+
+- (void) allowChangeController:(ConfirmBlock)confirmBlock
+                  toController:(AB_Controller)newController;
+
+- (NSArray*) sidebars;
+
+- (void) bind;
 
 @property(strong) id key;
+@property(nonatomic,retain) UIView *view;
+@property(readonly) BOOL open;
+
+- (void) addChildViewController:(UIViewController *)childController;
+- (void) removeFromParentViewController;
+
+@property(readonly) CGFloat height;
+
+- (void) addRetainObject:(id)obj;
+
+@property(strong) NSString* sourceString;
+
+- (RACSignal*)openSignal;
+- (RACSignal*)closeSignal;
 
 @end
 
-typedef UIViewController<AB_DataContainer>* AB_Controller;
 
+typedef void (^CreateControllerBlock)(AB_Controller controller);
+
+@protocol AB_SectionContainer <NSObject>
+
+- (void) pushControllerWithName:(id)name;
+- (void) pushControllerWithName:(id)name
+                  withAnimation:(id<UIViewControllerAnimatedTransitioning>)animation;
+- (void) pushControllerWithName:(id)name
+                withConfigBlock:(CreateControllerBlock)configurationBlock;
+- (void) pushControllerWithName:(id)name
+                withConfigBlock:(CreateControllerBlock)configurationBlock
+                  withAnimation:(id<UIViewControllerAnimatedTransitioning>)animation;
+- (void) pushControllerWithName:(id)name
+                  withAnimation:(id<UIViewControllerAnimatedTransitioning>)animation
+                shouldPushState:(BOOL)shouldPushState;
+- (void) pushControllerWithName:(id)name
+                withConfigBlock:(CreateControllerBlock)configurationBlock
+                  withAnimation:(id<UIViewControllerAnimatedTransitioning>)animation
+                shouldPushState:(BOOL)shouldPushState;
+
+- (void) pushController:(AB_Controller)sectionController;
+- (void) pushController:(AB_Controller)sectionController
+              forceOpen:(BOOL)forceOpen
+            pushOnState:(BOOL)shouldPushOnState;
+- (void) pushController:(AB_Controller)sectionController
+        withConfigBlock:(CreateControllerBlock)configurationBlock;
+- (void) pushController:(AB_Controller)sectionController
+          withAnimation:(id<UIViewControllerAnimatedTransitioning>)animation;
+- (void) pushController:(AB_Controller)sectionController
+        withConfigBlock:(CreateControllerBlock)configurationBlock
+          withAnimation:(id<UIViewControllerAnimatedTransitioning>)animation;
+
+- (void) popController;
+- (void) popControllerWithAnimation:(id<UIViewControllerAnimatedTransitioning>)animation;
+
+- (void) clearBackHistory;
+
+@end

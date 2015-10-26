@@ -10,11 +10,13 @@
 
 @interface AB_Controllers : NSObject
 
-- (AB_Controller) controllerForTag:(id)tag;
-- (AB_Controller) controllerForTag:(id)tag withData:(id)data;
+- (AB_Controller) controllerForTag:(id)key;
+- (AB_Controller) controllerForTag:(id)key source:(NSString*)sourceString;
 - (NSInteger) tagForController:(AB_Controller)controller;
 
 - (NSDictionary*) getControllers;
+
+- (void) returnControllerToPool:(AB_Controller)controller;
 
 @end
 

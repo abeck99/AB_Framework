@@ -1,76 +1,21 @@
-- (CGRect) anchoredRect:(CGRect)testRect inView:(UIView*)view
-{
-    return [self anchoredRect:testRect
-                       inView:view
-           internalAnchorRect:CGRectFromComponents(CGSizeZero, testRect.size)];
-}
-
-- (CGRect) anchoredRect:(CGRect)testRect inView:(UIView*)view internalAnchorRect:(CGRect)anchorRect
-{
-    // TODO: Ugly stuff, is there a cleaner way to do this?
-    CGSize conatinerSize = view.bounds.size;
-    CGSize selfSize = testRect.size;
-    CGSize containerHalfSized = CGSizeMultiplyScalar(conatinerSize, 0.5f);
-    CGSize selfHalfSized = CGSizeMultiplyScalar(selfSize, 0.5f);
-    
-    CGSize selfCenteredInContainer = CGSizeAdd(containerHalfSized, CGSizeMultiplyScalar(selfHalfSized, -1.f));
-    CGSize bottomAnchor = CGSizeMultiplyScalar(CGPointToCGSize(anchorRect.origin), -1.f);
-    CGSize openTopAnchor = CGSizeAdd(conatinerSize,
-                                     CGSizeMultiplyScalar(
-                                                          CGSizeAdd(
-                                                                    CGPointToCGSize(anchorRect.origin),
-                                                                    anchorRect.size), -1.f));
-    
-    BOOL flexibleTop = [self.view hasFlexibleTopMargin];
-    BOOL flexibleBottom = [self.view hasFlexibleBottomMargin];
-    BOOL flexibleLeft = [self.view hasFlexibleLeftMargin];
-    BOOL flexibleRight = [self.view hasFlexibleRightMargin];
-    
-    CGRect finalRect = CGRectFromComponents(CGSizeZero, selfSize);
-    
-    if (flexibleTop && !flexibleBottom)
-    {
-        finalRect.origin.y = openTopAnchor.height;
-    }
-    else if (!flexibleTop && flexibleBottom)
-    {
-        finalRect.origin.y = bottomAnchor.height;
-    }
-    else
-    {
-        finalRect.origin.y = selfCenteredInContainer.height;
-    }
-    
-    if (flexibleLeft && !flexibleRight)
-    {
-        finalRect.origin.x = openTopAnchor.width;
-    }
-    else if (!flexibleLeft && flexibleRight)
-    {
-        finalRect.origin.x = bottomAnchor.width;
-    }
-    else
-    {
-        finalRect.origin.x = selfCenteredInContainer.width;
-    }
-    
-    return finalRect;
-}
-
 - (CGRect) calculateClosedRectInView:(UIView*)view
 {
-    if (self.keepsFrameSize)
-    {
-        return [self anchoredRect:self.view.frame
-                           inView:view
-               internalAnchorRect:overhangFrame.frame];
-    }
-    return [self anchoredRect:overhangFrame.frame inView:view];
+    slidingConstraint.constant = self.closedConstant;
+    [self.view updateConstraints];
+    [self.view setNeedsLayout];
+    [self.view layoutIfNeeded];
+    CGRect returnRect = slideContentView.frame;
+    return returnRect;
 }
 
 - (CGRect) calculateOpenedRectInView:(UIView*)view
 {
-    return [self anchoredRect:self.view.frame inView:view];
+    slidingConstraint.constant = self.openConstant;
+    [self.view updateConstraints];
+    [self.view setNeedsLayout];
+    [self.view layoutIfNeeded];
+    CGRect returnRect = slideContentView.frame;
+    return returnRect;
 }
 
 - (void) dealloc
@@ -86,79 +31,39 @@
 
 - (void) setupSidebarInController:(AB_BaseViewController*)controller
 {
-    CGSize containerSize = controller.view.frame.size;
-    CGRect fullFrame = self.view.frame;
-    fullFrame.size = CGSizeMake(
-                                [self.view hasFlexibleWidth]
-                                    ? containerSize.width
-                                    : fullFrame.size.width,
-                                [self.view hasFlexibleHeight]
-                                    ? containerSize.height
-                                    : fullFrame.size.height
-                                );
-
-    [self setupWithFrame:fullFrame];
-    
     [self openInView:controller.view
       withViewParent:controller
            inSection:controller.sectionParent];
 }
 
-- (CGRect) openFrame
-{
-    return openView.frame;
-}
-
-- (CGRect) closedFrame
-{
-    return closedView.frame;
-}
-
 - (CGFloat) distanceAlongDrag:(CGPoint)dragPoint
 {
-    if (self.keepsFrameSize)
-    {
-        return DistanceAlongSegmentOfPointClosestToPoint(dragPoint,
-                                                         self.closedFrame.origin,
-                                                         self.openFrame.origin);
-    }
     return DistanceAlongSegmentOfPointClosestToPoint(dragPoint,
-                                                     CGRectCenterPoint(self.closedFrame),
-                                                     CGRectCenterPoint(self.openFrame));
+                                                     CGRectCenterPoint(closedRect),
+                                                     CGRectCenterPoint(openRect));
 }
 
 - (void) setupOpenCloseFramesInView:(UIView*)insideView
 {
-    [openView removeFromSuperview];
-    [closedView removeFromSuperview];
-    openView = nil;
-    closedView = nil;
-
-    CGRect openRect = [self calculateOpenedRectInView:insideView];
-    CGRect closeRect = [self calculateClosedRectInView:insideView];
-    
-    openView = [[UIView alloc] initWithFrame:openRect];
-    openView.userInteractionEnabled = NO;
-    openView.backgroundColor = [UIColor clearColor];
-    openView.autoresizingMask = self.view.autoresizingMask;
-    [insideView addSubview:openView];
-    
-    closedView = [[UIView alloc] initWithFrame:closeRect];
-    closedView.userInteractionEnabled = NO;
-    closedView.backgroundColor = [UIColor clearColor];
-    closedView.autoresizingMask = self.view.autoresizingMask;
-    [insideView addSubview:closedView];
+    ignoreLayoutChanges = YES;
+    openRect = [self calculateOpenedRectInView:insideView];
+    closedRect = [self calculateClosedRectInView:insideView];
+    NSLog(@"Open Rect: %@.... closed Rect: %@", NSStringFromCGRect(openRect), NSStringFromCGRect(closedRect));
+    ignoreLayoutChanges = NO;
+    self.openAmount = self.openAmount;
 }
 
-- (void) openInView:(UIView*)insideView
-withViewParent:(AB_BaseViewController*)viewParent_
-inSection:(AB_SectionViewController*)sectionParent_
+- (void) viewDidLayoutSubviews
 {
-    [self setupOpenCloseFramesInView:insideView];
-    
-    [super openInView:insideView
-       withViewParent:viewParent_
-            inSection:sectionParent_];
+    if (!ignoreLayoutChanges)
+    {
+        [self setupOpenCloseFramesInView:self.view.superview];
+    }
+}
+
+- (void) bind
+{
+    [super bind];
     
     for (UIView* interactionBar in interactionBars)
     {
@@ -174,63 +79,42 @@ inSection:(AB_SectionViewController*)sectionParent_
         [interactionBar addGestureRecognizer:panGesture];
         
         @weakify(self)
-        __block CGFloat startingViewPoint;
         __block CGFloat startingDragPoint;
+        __block CGFloat startingOpenAmount;
         [panGesture.rac_gestureSignal
          subscribeNext:^(UIPanGestureRecognizer* panGesture)
          {
-         @strongify(self)
-         // TODO: Figure out a general solution to this..
-         CGFloat dragScalar = self.keepsFrameSize ? 1.f : 0.5f;
-         CGPoint panGesturePoint = [panGesture locationInView:self.view.superview];
+            @strongify(self)
+            CGPoint panGesturePoint = [panGesture locationInView:self.view.superview];
          
-         switch (panGesture.state)
-         {
-         case UIGestureRecognizerStatePossible:
-         break;
-         case UIGestureRecognizerStateBegan:
-         {
-         CGRect curRect = ((CALayer*)[self.view.layer presentationLayer]).frame;
-         startingDragPoint = [self distanceAlongDrag:panGesturePoint] * dragScalar;
-         if (self.keepsFrameSize)
-         {
-         startingViewPoint = [self distanceAlongDrag:curRect.origin];
-         }
-         else
-         {
-         startingViewPoint = [self distanceAlongDrag:CGRectCenterPoint(curRect)];
-         }
-         }
-         case UIGestureRecognizerStateChanged:
-         {
-         CGFloat curDragPoint = [self distanceAlongDrag:panGesturePoint] * dragScalar;
-         CGFloat deltaDrag = curDragPoint - startingDragPoint;
-         CGFloat curViewPoint = Clamp(startingViewPoint + deltaDrag, 0.f, 1.f);
-         CGRect curFrame = CGRectLerp(self.closedFrame, self.openFrame, curViewPoint);
-         self.view.frame = curFrame;
-                  
-         Underscore.array(viewsToHideWhenOpened)
-         .each(^(UIView* toHideOrShowView)
-               {
-                   toHideOrShowView.alpha = 1.f - curViewPoint;
-                   toHideOrShowView.hidden = toHideOrShowView.alpha == 0.f;
-               });
-
-         Underscore.array(viewsToHideWhenClosed)
-         .each(^(UIView* toHideOrShowView)
-               {
-                   toHideOrShowView.alpha = curViewPoint;
-                   toHideOrShowView.hidden = toHideOrShowView.alpha == 0.f;
-               });
-         }
-         break;
+            switch (panGesture.state)
+            {
+                case UIGestureRecognizerStatePossible:
+                    break;
+                case UIGestureRecognizerStateBegan:
+                {
+         [animationDisposable dispose];
+         animationDisposable = nil;
+                    startingOpenAmount = self.openAmount;
+                    startingDragPoint = [self distanceAlongDrag:panGesturePoint];
+                }
+                case UIGestureRecognizerStateChanged:
+                {
+         [animationDisposable dispose];
+         animationDisposable = nil;
+                    CGFloat curDragPoint = [self distanceAlongDrag:panGesturePoint];
+                    CGFloat deltaDrag = (curDragPoint - startingDragPoint) * 0.5f;
+                    CGFloat currentOpenAmount = Clamp(startingOpenAmount + deltaDrag, 0.f, 1.f);
+                    self.openAmount = currentOpenAmount;
+                }
+                break;
          case UIGestureRecognizerStateCancelled:
          case UIGestureRecognizerStateEnded:
          case UIGestureRecognizerStateFailed:
          {
-         CGFloat curDragPoint = [self distanceAlongDrag:panGesturePoint] * dragScalar;
+         CGFloat curDragPoint = [self distanceAlongDrag:panGesturePoint];// * dragScalar;
          CGFloat deltaDrag = curDragPoint - startingDragPoint;
-         BOOL opened = startingViewPoint + deltaDrag > 0.5f;
+         BOOL opened = startingOpenAmount + deltaDrag > 0.5f;
          CGPoint velocity = [panGesture velocityInView:self.view.superview];
          CGSize velocityPoint = CGSizeAdd(CGPointToCGSize(panGesturePoint), CGPointToCGSize(velocity));
          CGFloat velocityOnPath = [self distanceAlongDrag:CGSizeToCGPoint(velocityPoint)];
@@ -251,19 +135,26 @@ inSection:(AB_SectionViewController*)sectionParent_
          }];
     }
     
+    for (UIView* view in viewsToHideWhenOpened)
+    {
+        RAC(view, alpha) = [RACObserve(self, openAmount)
+                            map:^(NSNumber* amount)
+                            {
+                            return @(1.f - [amount floatValue]);
+                            }];
+    }
+
+    for (UIView* view in viewsToHideWhenClosed)
+    {
+        RAC(view, alpha) = RACObserve(self, openAmount);
+    }
+
     [self setOpened:self.startsOpen animated:NO forced:YES];
 }
 
-- (void) closeView
+- (BOOL) sliderOpen
 {
-    [super closeView];
-    [openView removeFromSuperview];
-    [closedView removeFromSuperview];
-}
-
-- (BOOL) opened
-{
-    return isOpened;
+    return self.openAmount > 0.5f;
 }
 
 - (CGFloat) animationSpeed
@@ -271,13 +162,65 @@ inSection:(AB_SectionViewController*)sectionParent_
     return 0.4f;
 }
 
-- (void) animate:(void(^)())animateBlock
-complete:(void(^)(BOOL finished))completeBlock
-animated:(BOOL)isAnimated
+- (CGFloat) openAmount
 {
+    return _openAmount;
+}
+
+- (void) setOpenAmount:(CGFloat)openAmount
+{
+    _openAmount = openAmount;
+    ignoreLayoutChanges = YES;
+    slidingConstraint.constant = Lerp(self.closedConstant, self.openConstant, _openAmount);
+    [self.view updateConstraints];
+    [self.view setNeedsLayout];
+    [self.view layoutIfNeeded];
+    ignoreLayoutChanges = NO;
+    [self.view updateConstraints];
+}
+
+- (void) updatePositionFromStart:(CGFloat)startAmount toEnd:(CGFloat)endAmount startedAt:(NSDate*)startDate duration:(NSTimeInterval)duration
+{
+    NSTimeInterval timeSinceStart = fabs([startDate timeIntervalSinceNow]);
+    
+    if (timeSinceStart >= duration)
+    {
+        self.openAmount = endAmount;
+        [animationDisposable dispose];
+        animationDisposable = nil;
+        return;
+    }
+    
+    CGFloat normalizedDuration = timeSinceStart / duration;
+    self.openAmount = EasingFunction(Lerp(startAmount, endAmount, normalizedDuration));
+}
+
+- (void) animate:(void(^)())animateBlock
+    toDestination:(CGFloat)destination
+    complete:(void(^)(BOOL finished))completeBlock
+    animated:(BOOL)isAnimated
+{
+    [animationDisposable dispose];
+    animationDisposable = nil;
+    
     if (isAnimated)
     {
-        [UIView animateWithDuration:[self animationSpeed]
+        CGFloat animationDuration = [self animationSpeed];
+        NSDate* startDate = [NSDate date];
+        CGFloat startOpenAmount = self.openAmount;
+        CGFloat endOpenAmount = destination;
+
+        @weakify(self)
+        animationDisposable =
+        [[RACScheduler mainThreadScheduler]
+         after:startDate repeatingEvery:0.01f withLeeway:0.01f
+         schedule:^
+         {
+            @strongify(self)
+            [self updatePositionFromStart:startOpenAmount toEnd:endOpenAmount startedAt:startDate duration:animationDuration];
+         }];
+        
+        [UIView animateWithDuration:animationDuration
                               delay:0.f
              usingSpringWithDamping:1.f
               initialSpringVelocity:0.f
@@ -287,6 +230,7 @@ animated:(BOOL)isAnimated
     }
     else
     {
+        self.openAmount = destination;
         animateBlock();
         completeBlock(YES);
     }
@@ -299,33 +243,17 @@ animated:(BOOL)isAnimated
 
 - (void) setOpened:(BOOL)opened animated:(BOOL)isAnimated forced:(BOOL)isForced
 {
-    if (!isForced && opened == self.opened)
+    if (!isForced && opened == self.sliderOpen)
     {
         return;
     }
     
-    isOpened = opened;
-    
-    CGRect desintation = self.opened ? self.openFrame : self.closedFrame;
+    CGFloat desintation = opened ? 1.f : 0.f;
     [self
      animate:^
      {
-     self.view.frame = desintation;
-     
-     Underscore.array(viewsToHideWhenClosed)
-     .each(^(UIView* toHideOrShowView)
-           {
-               toHideOrShowView.alpha = !isOpened ? 0.f : 1.f;
-               toHideOrShowView.hidden = toHideOrShowView.alpha == 0.f;
-           });
-
-     Underscore.array(viewsToHideWhenOpened)
-     .each(^(UIView* toHideOrShowView)
-           {
-               toHideOrShowView.alpha = isOpened ? 0.f : 1.f;
-               toHideOrShowView.hidden = toHideOrShowView.alpha == 0.f;
-           });
      }
+     toDestination:desintation
      complete:^(BOOL finished)
      {
         if (finished)
@@ -336,7 +264,7 @@ animated:(BOOL)isAnimated
      animated:isAnimated];
 }
 
-- (void) setOpened:(BOOL)opened
+- (void) setSliderOpen:(BOOL)opened
 {
     [self setOpened:opened animated:YES forced:NO];
 }
@@ -348,7 +276,7 @@ animated:(BOOL)isAnimated
         return;
     }
     
-    self.opened = !self.opened;
+    self.sliderOpen = !self.sliderOpen;
 }
 
 //- (void) viewDidLayoutSubviews
@@ -389,5 +317,5 @@ animated:(BOOL)isAnimated
 
 - (IBAction) toggleOpened:(id)sender
 {
-    self.opened = !self.opened;
+    self.sliderOpen = !self.sliderOpen;
 }

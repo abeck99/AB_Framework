@@ -11,36 +11,21 @@
 
 //#import "GAITrackedViewController.h"
 
-typedef void (^CreateControllerBlock)(AB_Controller controller);
-
 @interface AB_BaseViewController : UIViewController<AB_DataContainer>
 {
-    BOOL isOpen;
-    IBOutletCollection(UIView) NSArray* themeViews;
-    IBOutletCollection(UIView) NSArray* roundedViews;
-    IBOutletCollection(UIView) NSArray* circleViews;
-    IBOutletCollection(UIView) NSArray* gradientViews;
-    IBOutletCollection(UIView) NSArray* rotatedViews;
+    IBOutlet UIView* heightDefiningView;
     
-    IBOutletCollection(UIScrollView) NSArray* scrollViews;
-    IBOutletCollection(UIView) NSArray* scrollContentViews;
+    AB_Section sectionParent;
     
-    AB_SectionViewController* sectionParent;
-    AB_BaseViewController* viewParent;
-    
+    NSArray* retainObjects;
     NSArray* sidebars;
-    
-    id _data;
 }
 
 - (NSString*) setScreenName;
 
-+ (Class) expectedClass;
-
-- (void) setupWithFrame:(CGRect)frame;
 - (void) openInView:(UIView*)insideView
-     withViewParent:(AB_BaseViewController*)viewParent_
-          inSection:(AB_SectionViewController*)sectionParent_;
+     withViewParent:(AB_Controller)viewParent_
+          inSection:(AB_Section)sectionParent_;
 - (void) closeView;
 
 - (id<AB_SideBarProtocol>) addSidebarAndOpen:(id)name;
@@ -48,30 +33,16 @@ typedef void (^CreateControllerBlock)(AB_Controller controller);
 - (void) removeSidebar:(id)name;
 - (id<AB_SideBarProtocol>) sidebar:(id)name;
 
-- (void) pushOnParent:(NSString*)controllerName;
-- (void) pushOnParent:(NSString*)controllerName withConfigBlock:(CreateControllerBlock)configurationBlock;
+- (IBAction) back:(id)sender;
 
-- (void) pushOnNavigationController:(id)controllerName withConfigBlock:(CreateControllerBlock)configurationBlock;
-- (void) pushOnNavigationController:(id)controllerName withConfigBlock:(CreateControllerBlock)configurationBlock animated:(BOOL)animated;
+@property(readonly) BOOL open;
+@property(readonly) AB_Section sectionParent;
 
-- (void) jumpToOrigin;
-- (void) jumpToElement:(UIView*)element;
+@property(readonly) CGFloat height;
 
-- (void) dataUpdated;
+@property(strong) NSString* sourceString;
 
-- (void) attemptToReopen;
-- (void) poppedAwayWhileStillOpen;
-- (void) poppedBackWhileStillOpen;
 
-- (void) setupScrollViews;
-
-- (IBAction) debugLayout:(id)sender;
-
-- (void) resetScrollViewContentSizes;
-- (NSArray*) sidebars;
-
-@property(readonly) BOOL isOpen;
-@property(strong) id data;
-@property(readonly) AB_SectionViewController* sectionParent;
+- (void) showExistingControllers;
 
 @end

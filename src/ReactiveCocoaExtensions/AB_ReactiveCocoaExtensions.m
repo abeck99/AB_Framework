@@ -125,6 +125,66 @@
             setNameWithFormat:@"+noResubscriptionIf: %@ then: %@ else: %@", boolSignal, trueSignal, falseSignal];
 }
 
+- (instancetype) promise
+{
+    __block id retValue = nil;
+    __block BOOL restart = YES;
+    __block RACSignal* publishedSignal = nil;
+    
+    return [RACSignal createSignal:^RACDisposable*(id<RACSubscriber>subscriber)
+            {
+                if (retValue)
+                {
+                    [subscriber sendNext:retValue];
+                    [subscriber sendCompleted];
+                    return nil;
+                }
+                
+                if (restart)
+                {
+                    publishedSignal = [[self publish] autoconnect];
+                }
+                
+                return
+                [publishedSignal
+                 subscribeNext:^(id x)
+                 {
+                     retValue = x;
+                     [subscriber sendNext:x];
+                 }
+                 error:^(NSError* error)
+                 {
+                     restart = YES;
+                     [subscriber sendError:error];
+                 }
+                 completed:^
+                 {
+                     [subscriber sendCompleted];
+                 }];
+            }];
+}
+
+- (instancetype) extractErrorsToBlock:(void (^)(NSError *error))errorBlock
+{
+    return
+    [[[self materialize]
+    map:^RACEvent*(RACEvent* event)
+     {
+         if (event.eventType == RACEventTypeError)
+         {
+             errorBlock(event.error);
+             return [RACEvent completedEvent];
+         }
+         
+         return event;
+     }] dematerialize];
+}
+
+- (instancetype) noop
+{
+    return self;
+}
+
 
 @end
 

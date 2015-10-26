@@ -21,11 +21,13 @@ typedef void (^TransitionCompleteBlock)(AB_TransitionContextObject* contextObjec
     AB_Controller toController;
     UIView* contentView;
     id<UIViewControllerAnimatedTransitioning> animation;
-    TransitionCancelledBlock cancelBlock;
-    TransitionCompleteBlock completeBlock;
+    NSArray* cancelBlocks;
+    NSArray* completedBlocks;
     
     BOOL isCancelled;
 }
+
+@property(readonly) AB_Controller toController;
 
 - (id) initWithFromController:(AB_Controller)_fromController
                  toController:(AB_Controller)_toController
@@ -33,5 +35,8 @@ typedef void (^TransitionCompleteBlock)(AB_TransitionContextObject* contextObjec
                 withAnimation:(id<UIViewControllerAnimatedTransitioning>)_animation
               withCancelBlock:(TransitionCancelledBlock)_cancelBlock
               withFinishBlock:(TransitionCompleteBlock)_completeBlock;
+
+- (void) addCompleteBlock:(TransitionCompleteBlock)completeBlock;
+- (void) addCancelBlock:(TransitionCancelledBlock)cancelBlock;
 
 @end

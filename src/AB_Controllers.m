@@ -11,6 +11,7 @@
 {
     NSDictionary* controllers;
     NSMutableDictionary* nibs;
+    NSMutableDictionary* controllerPool;
 }
 
 @end
@@ -41,6 +42,7 @@ void setController(AB_Controllers* newControllers)
                 },
  */
         controllers = [self getControllers];
+        controllerPool = [@{} mutableCopy];
         [self loadNibs];
         
         [[UITableViewCell appearance] setBackgroundColor:[UIColor clearColor]];
@@ -68,10 +70,10 @@ void setController(AB_Controllers* newControllers)
 
 - (AB_Controller) controllerForTag:(id)key
 {
-    return [self controllerForTag:key withData:nil];
+    return [self controllerForTag:key source:nil];
 }
 
-- (AB_Controller) controllerForTag:(id)key withData:(id)data
+- (AB_Controller) controllerForTag:(id)key source:(NSString*)sourceString
 {
     NSDictionary* controllerDesc = controllers[key];
 
@@ -80,6 +82,31 @@ void setController(AB_Controllers* newControllers)
         controllerDesc = controllers[@"default"];
     }
 
+    id defaultKey = [controllerDesc objectForKey:@"defaultController"];
+
+    NSMutableArray* pool = controllerPool[key];
+    if (pool.count > 0)
+    {
+        AB_Controller retController = pool[0];
+        [pool removeObject:retController];
+        retController.sourceString = sourceString;
+        
+        if ([retController conformsToProtocol:@protocol(AB_SectionContainer)])
+        {
+            AB_Section section = (AB_Section)retController;
+            
+            [section clearBackHistory];
+            
+            if (defaultKey)
+            {
+                AB_Controller subcontroller = [self controllerForTag:defaultKey];
+                [section pushController:subcontroller];
+            }
+        }
+        
+        return retController;
+    }
+    
     Class class = controllerDesc[@"class"];
     NSString* nibName = controllerDesc[@"nib"];
     
@@ -102,7 +129,6 @@ void setController(AB_Controllers* newControllers)
     
     AB_Controller retController = nil;
     
-    id defaultKey = [controllerDesc objectForKey:@"defaultController"];
     if ( defaultKey )
     {
         AB_Controller defaultController = [self controllerForTag:defaultKey];
@@ -114,7 +140,12 @@ void setController(AB_Controllers* newControllers)
     }
     retController.key = key;
     
-    [nib instantiateWithOwner:retController options:@{}];
+    NSArray* objs = [nib instantiateWithOwner:retController options:@{}];
+    for (id obj in objs)
+    {
+        [retController addRetainObject:obj];
+    }
+    
     
     if ( !retController.view )
     {
@@ -123,7 +154,11 @@ void setController(AB_Controllers* newControllers)
          format:@"%@ probably didn't set it's view in %@", key, nibName];
         return nil;
     }
-        
+    
+    retController.sourceString = @"initial-setup";
+    [retController bind];
+    retController.sourceString = sourceString;
+    
     return retController;
 }
 
@@ -140,6 +175,20 @@ void setController(AB_Controllers* newControllers)
     }
     
     return -1;
+}
+
+- (void) returnControllerToPool:(AB_Controller)controller
+{
+    id key = controller.key;
+    
+    NSMutableArray* pool = controllerPool[key];
+    if (!pool)
+    {
+        pool = [@[] mutableCopy];
+        controllerPool[key] = pool;
+    }
+    
+    [pool addObject:controller];
 }
 
 @end

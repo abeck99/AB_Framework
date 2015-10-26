@@ -33,27 +33,64 @@
 
 - (BOOL) pointInside:(CGPoint)point withEvent:(UIEvent *)event
 {
-    NSMutableArray* touchableViews = [[self visibleCells] mutableCopy];
+//    NSMutableArray* touchableViews = [[self visibleCells] mutableCopy];
+//
+//    [touchableViews addObjectsFromArray:
+//    Underscore.array(self.subviews)
+//    .filter(^(UIView* view)
+//            {
+//                return [view isKindOfClass:[UITableViewHeaderFooterView class]];
+//            })
+//     .unwrap];
+//
+//    BOOL isPointInside = Underscore.array([NSArray arrayWithArray:touchableViews])
+//    .map(^NSArray*(UIView* subview)
+//         {
+//             if ([subview isKindOfClass:[UITableViewCell class]])
+//             {
+//                 return ((UITableViewCell*)subview).contentView.subviews;
+//             }
+//
+//             return @[subview];
+//         })
+//    .flatten
+//    .filter(^BOOL(UIView* subview)
+//            {
+//                return subview.isUserInteractionEnabled;
+//            })
+//    .any(^BOOL(UIView* subview)
+//         {
+//             CGPoint pointInView = [subview convertPoint:point fromView:self];
+//             return [subview pointInside:pointInView withEvent:event];
+//         });
 
-    [touchableViews addObjectsFromArray:
-    Underscore.array(self.subviews)
-    .filter(^(UIView* view)
-            {
-                return [view isKindOfClass:[UITableViewHeaderFooterView class]];
-            })
-     .unwrap];
-
-    BOOL isPointInside = Underscore.array([NSArray arrayWithArray:touchableViews])
-    .map(^NSArray*(UIView* subview)
-         {
-             if ([subview isKindOfClass:[UITableViewCell class]])
-             {
-                 return ((UITableViewCell*)subview).contentView.subviews;
-             }
-
-             return @[subview];
-         })
-    .flatten
+    NSMutableArray* allViews = [
+                                Underscore.array(self.visibleCells)
+                                .map(^(UITableViewCell* c)
+                                     {
+                                         return c.contentView.subviews;
+                                     })
+                                .flatten
+                                .unwrap
+                                mutableCopy];
+    
+    
+    for (int i=0; i<[self numberOfSections]; i++)
+    {
+        UIView* v = [self headerViewForSection:i];
+        if (v)
+        {
+            [allViews addObjectsFromArray:v.subviews];
+        }
+        
+        v = [self footerViewForSection:i];
+        if (v)
+        {
+            [allViews addObjectsFromArray:v.subviews];
+        }
+    }
+    
+    BOOL isPointInside = Underscore.array(allViews)
     .filter(^BOOL(UIView* subview)
             {
                 return subview.isUserInteractionEnabled;
@@ -61,9 +98,13 @@
     .any(^BOOL(UIView* subview)
          {
              CGPoint pointInView = [subview convertPoint:point fromView:self];
-             return [subview pointInside:pointInView withEvent:event];
+             BOOL pointInside = [subview pointInside:pointInView withEvent:event];
+             
+             NSLog(@"View: %@ point Inside: %d", subview, pointInside);
+             
+             return pointInside;
          });
-    
+
     return isPointInside;
 }
 

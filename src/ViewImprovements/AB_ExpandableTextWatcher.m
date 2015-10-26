@@ -83,6 +83,7 @@ static void* textUpdateContext = &textUpdateContext;
         expandableText.contentInset = UIEdgeInsetsMake(0.0, 0, 0.0, 0);
         expandableText.contentOffset = CGPointMake(0.f, 0.f);
         expandableText.textContainerInset = UIEdgeInsetsMake(0.0, 0, 0.0, 0);
+        expandableText.textContainer.lineFragmentPadding = 0.f;
         
         CGSize expectedLabelSize = [contentString boundingRectWithSize:
                                     CGSizeMake(expandableText.frame.size.width - 10.f, CGFLOAT_MAX)
@@ -96,10 +97,17 @@ static void* textUpdateContext = &textUpdateContext;
         
         dif = expandableTextFrame.size.height - oldExpandableSize;
     }
-    
-    dif += self.endBufferSize;
 
-    [self recursivelyAdjustView:expandableText by:dif];
+    if (self.resizeAll)
+    {
+        [self recursivelyAdjustView:expandableText by:dif];
+    }
+    else
+    {
+        CGRect f = expandableText.frame;
+        f.size.height += dif;
+        expandableText.frame = f;
+    }
     
     expandableText.attributedText = [[NSAttributedString alloc] initWithString:contentString
                                                                     attributes:stringAttributes];

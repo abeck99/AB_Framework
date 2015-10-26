@@ -157,6 +157,10 @@
 
     for ( UIView* view in realContentView.subviews )
     {
+        if ([view conformsToProtocol:@protocol(AB_TableView)])
+        {
+            [(id<AB_TableView>)view prepareForReuse];
+        }
         [view removeFromSuperview];
     }
     

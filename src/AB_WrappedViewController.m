@@ -38,8 +38,8 @@
 //}
 
 - (void) openInView:(UIView*)insideView
-     withViewParent:(AB_BaseViewController*)viewParent_
-          inSection:(AB_SectionViewController*)sectionParent_
+     withViewParent:(AB_Controller)viewParent_
+          inSection:(AB_Section)sectionParent_
 {
     retainSelf = @[self];
     [super openInView:insideView

@@ -25,6 +25,6 @@
 @property(weak) IBOutlet NSObject<TextWatcherEventListener>* delegate;
 @property(weak) IBOutlet UIView* rootView;
 @property(assign) IBInspectable CGFloat minimumSize;
-@property(assign) IBInspectable CGFloat endBufferSize;
+@property(assign) IBInspectable BOOL resizeAll;
 
 @end

@@ -15,30 +15,25 @@
     IBOutletCollection(UIView) NSArray* interactionBars;
     IBOutletCollection(UIView) NSArray* viewsToHideWhenClosed;
     IBOutletCollection(UIView) NSArray* viewsToHideWhenOpened;
-    IBOutlet UIView* overhangFrame;
-
-    UIView* closedView;
-    UIView* openView;
-
-    BOOL isOpened;
+    
+    IBOutlet NSLayoutConstraint* slidingConstraint;
+    
+    CGRect openRect;
+    CGRect closedRect;
+    
+    IBOutlet UIView* slideContentView;
 }
 
 - (CGFloat) animationSpeed;
 - (void) finishedOpen:(BOOL)wasAnimated;
 
-- (void) setupOpenCloseFramesInView:(UIView*)insideView;
-
-// TODO: Determine a better method than the anchor system (needs to be able to use constraints for the future)
 // TODO: Allow Sidebar to remove itself (needs to remove itself from parent array)
-// TODO: Add property for close direction and auto remove (will end up being like popup)
 // TODO: Merge in popups ideas about priority and overlay
-// TODO: Maybe allow both slide in resize frame?
-@property(assign) BOOL opened;
+@property(assign) BOOL sliderOpen;
 @property(assign) IBInspectable BOOL startsOpen;
-@property(assign) IBInspectable BOOL keepsFrameSize;
 
-@property(readonly) CGRect openFrame;
-@property(readonly) CGRect closedFrame;
+@property(assign) IBInspectable CGFloat closedConstant;
+@property(assign) IBInspectable CGFloat openConstant;
 
 - (IBAction) toggleOpened:(id)sender;
 
