@@ -59,6 +59,7 @@
 // Call these to set properties
 // Don't forget to set reuseidentifier in the xib!
 - (void) setNib:(NSString*)nibName forSectionType:(NSString*)sectionType;
+- (void) setNib:(NSString*)nibName forSectionType:(NSString*)sectionType inBundle:(NSBundle*)bundle;
 - (void) setEmptyNib:(NSString*)nibName forSectionType:(NSString*)sectionType;
 
 - (void) clearSections;

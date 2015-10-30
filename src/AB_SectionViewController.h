@@ -11,9 +11,7 @@
 @interface AB_SectionViewController : AB_BaseViewController<AB_SectionContainer>
 {
     IBOutlet UIView* contentView;
-    
-    NSMutableArray* contentControllers;
-    
+        
     NSNumber* currentlyLoading;
     
     id sectionSyncObject;
@@ -29,7 +27,6 @@
                 bundle:(NSBundle *)nibBundleOrNil
      defaultController:(AB_Controller)defaultController;
 
-- (AB_Controller) currentController;
 
 - (void) pushControllerWithName:(id)name;
 - (void) pushControllerWithName:(id)name
@@ -66,13 +63,13 @@
 
 - (id<UIViewControllerAnimatedTransitioning>) defaultAnimationTransitioningTo:(id)key;
 
-- (NSUInteger) numPushedViews;
 - (void) controllerWillChange:(AB_Controller)newController;
 - (void) controllerDidChange;
 
 - (void) momentOfOverlapInView:(UIView*)parentView;
 
 @property(readonly) UIView* contentView;
+@property(readonly) AB_Controller currentController;
 
 - (void) clearBackHistory;
 

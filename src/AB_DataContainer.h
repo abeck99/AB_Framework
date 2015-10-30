@@ -12,6 +12,10 @@
 @class AB_BaseViewController;
 
 typedef void (^ConfirmBlock)(BOOL confirmed);
+typedef BOOL (^TestControllerForModel)(id contentModel);
+typedef void (^CreateControllerWithModelBlock)(id controller, id contentModel);
+typedef void (^CloseControllerBlock)(id controller);
+
 
 @protocol AB_DataContainer;
 typedef UIViewController<AB_DataContainer>* AB_Controller;
@@ -55,6 +59,8 @@ typedef NSObject<AB_SectionContainer>* AB_Section;
 - (RACSignal*)openSignal;
 - (RACSignal*)closeSignal;
 
+- (void) setCloseBlock:(CloseControllerBlock)closeBlock;
+
 @end
 
 
@@ -77,6 +83,11 @@ typedef void (^CreateControllerBlock)(AB_Controller controller);
                 withConfigBlock:(CreateControllerBlock)configurationBlock
                   withAnimation:(id<UIViewControllerAnimatedTransitioning>)animation
                 shouldPushState:(BOOL)shouldPushState;
+- (void) pushControllerWithName:(id)name
+                withConfigBlock:(CreateControllerBlock)configurationBlock
+                  withAnimation:(id<UIViewControllerAnimatedTransitioning>)animation
+                      forceOpen:(BOOL)forceOpen
+                    pushOnState:(BOOL)shouldPushOnState;
 
 - (void) pushController:(AB_Controller)sectionController;
 - (void) pushController:(AB_Controller)sectionController

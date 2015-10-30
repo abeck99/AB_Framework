@@ -20,8 +20,8 @@ IB_DESIGNABLE
 @property(assign) IBInspectable CGFloat borderWidth;
 @property(assign) IBInspectable UIColor* borderColor;
 
-@property(strong) IBInspectable UIColor* highlightedColor;
-@property(strong) IBInspectable UIColor* disabledColor;
-@property(strong) IBInspectable UIColor* selectedColor;
+@property(strong) IBInspectable UIColor* highlightedBackgroundColor;
+@property(strong) IBInspectable UIColor* disabledBackgroundColor;
+@property(strong) IBInspectable UIColor* selectedBackgroundColor;
 
 @end

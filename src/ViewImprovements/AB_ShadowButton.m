@@ -8,6 +8,8 @@
 
 #import "AB_ShadowButton.h"
 #import "ReactiveCocoa.h"
+#import "AB_PauseUpdates.h"
+#import "AB_ReactiveCocoaExtensions.h"
 
 @interface AB_ShadowButton()
 {
@@ -31,37 +33,64 @@
 
 - (void) setup
 {
-    self.originalBackgroundColor = self.backgroundColor;
+    AB_PauseUpdates* pauseUpdates = [[AB_PauseUpdates alloc] init];
     
-    @weakify(self)
-    RAC(self, backgroundColor) =
-    [[RACSignal
-      combineLatest:@[
-                      RACObserve(self, highlighted),
-                      RACObserve(self, enabled),
-                      RACObserve(self, selected),
-                      ]]
-     map:^(RACTuple* tuple)
+    [pauseUpdates pauseDuringExecution:^
      {
-         NSNumber* isHighlighted = tuple[0];
-         NSNumber* isEnabled = tuple[1];
-         NSNumber* isSelected = tuple[2];
+         self.originalBackgroundColor = self.backgroundColor;
          
-         @strongify(self)
-         if (![isEnabled boolValue] && self.disabledColor)
-         {
-             return self.disabledColor;
-         }
-         if ([isHighlighted boolValue] && self.highlightedColor)
-         {
-             return self.highlightedColor;
-         }
-         if ([isSelected boolValue] && self.selectedColor)
-         {
-             return self.selectedColor;
-         }
-         return self.originalBackgroundColor;
+         RAC(self, backgroundColor) =
+         [[[RACSignal
+           combineLatest:@[
+                           RACObserve(self, highlighted),
+                           RACObserve(self, enabled),
+                           RACObserve(self, selected),
+                           RACObserve(self, originalBackgroundColor),
+                           RACObserve(self, disabledBackgroundColor),
+                           RACObserve(self, highlightedBackgroundColor),
+                           RACObserve(self, selectedBackgroundColor),
+                           ]] pause:pauseUpdates]
+          map:^(RACTuple* tuple)
+          {
+              NSNumber* isHighlighted = tuple[0];
+              NSNumber* isEnabled = tuple[1];
+              NSNumber* isSelected = tuple[2];
+              
+              UIColor* originalBackgroundColor = [tuple[3] isValid] ? tuple[3] : nil;
+              UIColor* disabledBackgroundColor = [tuple[4] isValid] ? tuple[4] : nil;
+              UIColor* highlightedBackgroundColor = [tuple[5] isValid] ? tuple[5] : nil;
+              UIColor* selectedBackgroundColor = [tuple[6] isValid] ? tuple[6] : nil;
+              
+              if (![isEnabled boolValue] && disabledBackgroundColor)
+              {
+                  return disabledBackgroundColor;
+              }
+              if ([isHighlighted boolValue] && highlightedBackgroundColor)
+              {
+                  return highlightedBackgroundColor;
+              }
+              if ([isSelected boolValue] && selectedBackgroundColor)
+              {
+                  return selectedBackgroundColor;
+              }
+              return originalBackgroundColor;
+          }];
      }];
+}
+
+- (void) setBackgroundColor:(UIColor *)backgroundColor
+{
+    if (backgroundColor != self.disabledBackgroundColor &&
+        backgroundColor != self.highlightedBackgroundColor &&
+        backgroundColor != self.selectedBackgroundColor &&
+        backgroundColor != self.originalBackgroundColor)
+    {
+        self.originalBackgroundColor = backgroundColor;
+    }
+    else
+    {
+        [super setBackgroundColor:backgroundColor];
+    }
 }
 
 - (void) setShadowRadius:(CGFloat)shadowRadius

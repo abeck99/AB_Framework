@@ -12,6 +12,8 @@
 #import "Underscore.h"
 #import "AB_Popup.h"
 
+#define LOG_LIFECYCLE 0
+
 @interface AB_BaseViewController()
 {
     BOOL _open;
@@ -21,12 +23,19 @@
     
     RACSubject* openSubject;
     RACSubject* closeSubject;
+    
+    CloseControllerBlock closeBlock;
 }
 
 @end
 
 
 @implementation AB_BaseViewController
+
+- (void) setCloseBlock:(CloseControllerBlock)setCloseBlock
+{
+    closeBlock = setCloseBlock;
+}
 
 + (NSMutableArray*) existingControllers
 {
@@ -116,6 +125,9 @@
      withViewParent:(AB_Controller)viewParent_
           inSection:(AB_Section)sectionParent_
 {
+#if LOG_LIFECYCLE
+    NSLog(@"%p . Opening %@", self, self);
+#endif
     sectionParent = sectionParent_;
     
     [viewParent_ addChildViewController:self];
@@ -182,6 +194,10 @@
 
 - (void) bind
 {
+#if LOG_LIFECYCLE
+    NSLog(@"%p . Binding %@", self, self);
+#endif
+    
     NSMutableArray* existingControllers = [AB_BaseViewController existingControllers];
     [existingControllers addObject:self];
     
@@ -205,6 +221,9 @@
 
 - (void) closeView
 {
+#if LOG_LIFECYCLE
+    NSLog(@"%p . Closing %@", self, self);
+#endif
     NSMutableArray* existingControllers = [AB_BaseViewController existingControllers];
 //    if (![existingControllers containsObject:self])
 //    {
@@ -223,6 +242,14 @@
     sectionParent = nil;
     
     [closeSubject sendNext:self];
+    
+    CloseControllerBlock capturedCloseBlock = closeBlock;
+    closeBlock = nil;
+    if (capturedCloseBlock)
+    {
+        capturedCloseBlock(self);
+    }
+    
     [self returnToControllerPool];
 }
 
@@ -233,6 +260,9 @@
 
 - (void) dealloc
 {
+#if LOG_LIFECYCLE
+    NSLog(@"%p . Deallocing %@", self, self);
+#endif
     for ( UIGestureRecognizer* rec in [self.view.gestureRecognizers copy] )
     {
         [self.view removeGestureRecognizer:rec];

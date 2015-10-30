@@ -1,6 +1,6 @@
 //
 //  AB_BlockCallbackView.h
-//  GoHeroClient
+
 //
 //  Created by phoebe on 15/1/10.
 //  Copyright (c) 2015年 Hero. All rights reserved.

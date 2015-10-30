@@ -25,10 +25,6 @@ typedef NS_OPTIONS(NSUInteger, AB_DisplayType) {
     DisplayType_Cell,
 };
 
-typedef BOOL (^TestControllerForModel)(id controller, id contentModel);
-typedef void (^CreateControllerWithModelBlock)(id controller, id contentModel);
-typedef void (^CloseControllerBlock)(id controller);
-
 @interface AB_ControllerResolver : NSObject
 
 + (AB_ControllerResolver*) get;
@@ -84,6 +80,6 @@ controller.propertyName = propertyName; \
 } \
 closeCallback:^(controllerClass* controller) \
 { \
-controller.propertyName = nil; \
+//controller.propertyName = nil; \
 }];
 

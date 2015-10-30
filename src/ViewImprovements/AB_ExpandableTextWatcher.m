@@ -1,6 +1,6 @@
 //
 //  AB_ExpandableTextWatcher.m
-//  GoHeroClient
+
 //
 //  Created by phoebe on 6/1/15.
 //  Copyright (c) 2015 Hero. All rights reserved.

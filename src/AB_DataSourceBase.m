@@ -175,7 +175,12 @@
 
 - (void) setNib:(NSString*)nibName forSectionType:(NSString*)sectionType
 {
-    UINib* newNib = [UINib nibWithNibName:nibName bundle:[NSBundle mainBundle]];
+    [self setNib:nibName forSectionType:sectionType inBundle:[NSBundle mainBundle]];
+}
+
+- (void) setNib:(NSString*)nibName forSectionType:(NSString*)sectionType inBundle:(NSBundle*)bundle
+{
+    UINib* newNib = [UINib nibWithNibName:nibName bundle:bundle];
     
     NSMutableDictionary* mutableNibs = [nibs mutableCopy];
     [mutableNibs setObject:newNib forKey:sectionType];
@@ -288,6 +293,12 @@
     {
         return 0.f;
     }
+    
+    if (section.headerController)
+    {
+        return section.headerController.height;
+    }
+    
     return section.headerView
     ? section.headerView.frame.size.height
     : UITableViewAutomaticDimension;

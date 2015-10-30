@@ -12,17 +12,6 @@
 #import "AB_PauseUpdates.h"
 
 
-
-#import "AB_PageInfoCellViewController.h"
-#import "AB_TableViewModelItemsResolver.h"
-#import "AB_EmptyModel.h"
-#import "AB_ItemCellViewController.h"
-#import "AB_ItemTaskCellViewController.h"
-#import "AB_EmptyModel.h"
-#import "AB_SuperBigFooterModel.h"
-
-
-
 @interface AB_PageDataSource()
 {
     __weak AB_Controller viewController;
@@ -49,7 +38,7 @@
     {
         mutableHeaderControllers = [@[] mutableCopy];
         
-        [self setNib:@"ControllerTableViewCell" forSectionType:@"Controllers"];
+        [self setNib:@"ControllerTableViewCell" forSectionType:@"Controllers" inBundle:[NSBundle bundleForClass:[AB_PageDataSource class]]];
         
         [self rac_liftSelector:@selector(setupSectionFromModels:inContext:)
          withSignalOfArguments:[[RACSignal combineLatest:@[
@@ -76,63 +65,41 @@
 
     [sectionPause pauseDuringExecution:^
      {
-        for (AB_ContentModel* model in contentModels)
+        for (AB_BaseModel* model in contentModels)
         {
-            if ([model isKindOfClass:[AB_PageModel class]])
-            {
-                [self _setupSectionsFromPage:(AB_PageModel*)model inContext:context];
-            }
-            else if ([model isKindOfClass:[AB_PlaceholderModel class]])
-            {
-                [self _setupSectionFromPlaceholder:(AB_PlaceholderModel*)model inContext:context];
-            }
-            else
-            {
-                [self _setupSectionFromModel:model inContext:context];
-            }
+            [self _setupSectionFromModel:model inContext:context];
         }
 
         [self update];
      }];
 }
 
-- (void) _setupSectionsFromPage:(AB_PageModel*)page inContext:(NSString*)context
-{
-    for (AB_PlaceholderModel* placeholder in page.content)
-    {
-        [self _setupSectionFromPlaceholder:placeholder inContext:context];
-    }
-}
-     
+//      TODO: Make "ContentModel" and "Submodels" as the properties, instead of a single content model
+//- (void) _setupSectionFromModel:(AB_BaseModel*)model inContext:context
+//{
+//    if (!model)
+//    {
+//        return;
+//    }
+//    
+////    NSArray* submodels = [[AB_TableViewModelItemsResolver get]
+////                          itemsForModel:model
+////                          inContext:context];
+////
+//    [self _setupSectionFromModel:model
+//                       withItems:submodels ? submodels : @[model]
+//                       inContext:context];
+//}
+//
+//- (void) _setupSectionFromModel:(AB_ContentModel*)model withItems:(NSArray*)items inContext:context
 
-- (void) _setupSectionFromPlaceholder:(AB_PlaceholderModel*)placeholder inContext:(NSString*)context
-{
-    for (AB_ContentModel* model in placeholder.plugins)
-    {
-        [self _setupSectionFromModel:model inContext:context];
-    }
-}
 
-- (void) _setupSectionFromModel:(AB_ContentModel*)model inContext:context
-{
-    if (!model)
-    {
-        return;
-    }
-    
-    NSArray* submodels = [[AB_TableViewModelItemsResolver get]
-                          itemsForModel:model
-                          inContext:context];
-
-    [self _setupSectionFromModel:model
-                       withItems:submodels ? submodels : @[model]
-                       inContext:context];
-}
-
-- (void) _setupSectionFromModel:(AB_ContentModel*)model withItems:(NSArray*)items inContext:context
+- (void) _setupSectionFromModel:(AB_BaseModel*)model inContext:context
 {
     [sectionPause pauseDuringExecution:^
      {
+         NSArray* items = @[model];
+         
         AB_SectionInfo* placeholderSection = [[AB_SectionInfo alloc] init];
         
         AB_Controller headerController = [[AB_ControllerResolver get]
@@ -239,7 +206,7 @@
 
 - (void) setupCell:(UIView*)cell withData:(id)data dataIndexPath:(NSIndexPath*)indexPath
 {
-    cell.clipsToBounds = ![data isKindOfClass:[AB_SuperBigFooterModel class]];
+    cell.clipsToBounds = YES;
     
     if ([cell isKindOfClass:[AB_ControllerTableViewCell class]])
     {
@@ -290,10 +257,6 @@
         
         [controller openInView:parentView withViewParent:nil inSection:nil];
         
-        [parentView updateConstraints];
-        [parentView setNeedsLayout];
-        [parentView layoutIfNeeded];
-
         CGFloat height = controller.height;
         
         [controller closeView];

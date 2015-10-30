@@ -1,6 +1,6 @@
 //
 //  AB_TappableTextView.m
-//  GoHeroClient
+
 //
 //  Created by phoebe on 15/1/5.
 //  Copyright (c) 2015年 Hero. All rights reserved.

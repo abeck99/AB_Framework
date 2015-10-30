@@ -94,18 +94,7 @@
         callbacks.createControllerBlock(controller, model);
     }
     
-    if (callbacks.closeControllerBlock)
-    {
-        CloseControllerBlock capturedCloseBlock = callbacks.closeControllerBlock;
-        
-        [[[[controller closeSignal]
-          takeUntil:[controller rac_willDeallocSignal]]
-          take:1]
-         subscribeNext:^(id c)
-         {
-             capturedCloseBlock(c);
-         }];
-    }
+    [controller setCloseBlock:callbacks.closeControllerBlock];
 }
 
 
@@ -128,7 +117,7 @@
                forModelClass:modelClass
                   forDisplay:displayType
                    inContext:contextName
-               withTestBlock:^BOOL(id x, id y){ return YES; }];
+               withTestBlock:^BOOL(id _){ return YES; }];
 }
 
 - (void) registerController:(NSString*)tag
@@ -140,7 +129,7 @@
                forModelClass:modelClass
                   forDisplay:displayType
                    inContext:@""
-               withTestBlock:testBlock;
+               withTestBlock:testBlock];
 }
 
 - (void) registerController:(NSString*)tag
@@ -221,7 +210,7 @@
 {
     if (!self.testBlock || self.testBlock(model))
     {
-        if (self.displayType & displayType == displayType)
+        if ((self.displayType & displayType) == displayType)
         {
             if ([contextName isEqualToString:self.context])
             {
@@ -242,7 +231,7 @@
 {
     if (self == [super init])
     {
-        contextDict = @{@"": @{}};
+        resolvables = @[];
     }
     return self;
 }

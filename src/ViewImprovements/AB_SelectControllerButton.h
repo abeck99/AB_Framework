@@ -1,6 +1,6 @@
 //
 //  AB_SelectControllerButton.h
-//  GoHeroClient
+
 //
 //  Created by phoebe on 5/31/15.
 //  Copyright (c) 2015 Hero. All rights reserved.
@@ -28,9 +28,9 @@
 @property(assign) IBInspectable CGFloat borderWidth;
 @property(assign) IBInspectable UIColor* borderColor;
 
-@property(strong) IBInspectable UIColor* highlightedColor;
-@property(strong) IBInspectable UIColor* disabledColor;
-@property(strong) IBInspectable UIColor* selectedColor;
+@property(strong) IBInspectable UIColor* highlightedBackgroundColor;
+@property(strong) IBInspectable UIColor* disabledBackgroundColor;
+@property(strong) IBInspectable UIColor* selectedBackgroundColor;
 
 
 @end

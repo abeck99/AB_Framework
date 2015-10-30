@@ -17,6 +17,7 @@
 @interface AB_SectionViewController ()
 {
     RACSubject* finishedTransitionSubject;
+    AB_Controller _internalCurrentController;
 }
 
 @property(strong) NSArray* controllerDataStack;
@@ -25,6 +26,23 @@
 @end
 
 @implementation AB_SectionViewController
+
+- (void) internalSetCurrentController:(AB_Controller)_newCurrentController
+{
+    [self willChangeValueForKey:@"currentController"];
+    _internalCurrentController = _newCurrentController;
+    [self didChangeValueForKey:@"currentController"];
+}
+
++ (BOOL) automaticallyNotifiesObserversOfCurrentController
+{
+    return NO;
+}
+
+- (AB_Controller) currentController
+{
+    return _internalCurrentController;
+}
 
 @synthesize contentView;
 
@@ -51,7 +69,7 @@
         [self controllerWillChange:defaultController];
         if ( defaultController )
         {
-            [contentControllers addObject:defaultController];
+            [self internalSetCurrentController:defaultController];
             self.controllerDataStack = @[];
         }
         [self controllerDidChange];
@@ -133,7 +151,6 @@
 {
     finishedTransitionSubject = [RACSubject subject];
     self.controllerDataStack = @[];
-    contentControllers = [NSMutableArray arrayWithCapacity:1];
     sectionSyncObject = [[NSObject alloc] init];
 
     @weakify(self)
@@ -150,13 +167,6 @@
          self.internal_canPopController = [canPop boolValue];
          [self didChangeValueForKey:@"canPopController"];
      }];
-}
-
-- (AB_Controller) currentController
-{
-    return contentControllers.count > 0
-        ? (AB_Controller) [contentControllers lastObject]
-        : nil;
 }
 
 + (BOOL)automaticallyNotifiesObserversOfCanPopController
@@ -474,15 +484,12 @@
 - (void) replaceController:(AB_Controller)newController
 {
     [self controllerWillChange:newController];
-    if ( [contentControllers count] > 0 )
-    {
-        [[self currentController] closeView];        
-    }
-    [contentControllers removeAllObjects];
-    [contentControllers addObject:newController];
+    AB_Controller lastController = self.currentController;
+    [self internalSetCurrentController:newController];
     [[self currentController] openInView:contentView
                           withViewParent:self
                                inSection:self];
+    [lastController closeView];
     [self controllerDidChange];
 }
 
@@ -528,6 +535,7 @@
     AB_TransitionContextObject* lastTransition = currentTransitionObject;
     currentTransitionObject = transitionObject;
 
+    // TODO: Remove this copy/paste...
     if (lastTransition)
     {
         [lastTransition
@@ -541,8 +549,7 @@
              [self momentOfOverlapInView:self.contentView];
              newController.view.hidden = YES;
              
-             [contentControllers removeAllObjects];
-             [contentControllers addObject:newController];
+             [self internalSetCurrentController:newController];
              [self controllerDidChange];
 
              [animation animateTransition:transitionObject];
@@ -558,8 +565,7 @@
              [self momentOfOverlapInView:self.contentView];
              newController.view.hidden = YES;
 
-             [contentControllers removeAllObjects];
-             [contentControllers addObject:newController];
+             [self internalSetCurrentController:newController];
              [self controllerDidChange];
 
              [animation animateTransition:transitionObject];
@@ -575,8 +581,7 @@
         [self momentOfOverlapInView:self.contentView];
         newController.view.hidden = YES;
 
-        [contentControllers removeAllObjects];
-        [contentControllers addObject:newController];
+        [self internalSetCurrentController:newController];
         [self controllerDidChange];
 
         [animation animateTransition:transitionObject];
@@ -586,11 +591,6 @@
 - (void) setButton:(UIButton*)button selected:(BOOL)selected
 {
     button.selected = selected;
-}
-
-- (NSUInteger) numPushedViews
-{
-    return contentControllers.count;
 }
 
 - (void) controllerWillChange:(AB_Controller)newController

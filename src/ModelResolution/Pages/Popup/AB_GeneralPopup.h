@@ -6,7 +6,7 @@
 //
 
 #import "AB_Popup.h"
-#import "AB_ContentModel.h"
+#import "AB_BaseModel.h"
 #import "AB_PageDataSource.h"
 
 @interface AB_GeneralPopup : AB_Popup<AB_SectionContainer>
@@ -16,6 +16,6 @@
     IBOutlet NSLayoutConstraint* tableViewHeightConstraint;
 }
 
-@property(strong) AB_ContentModel* model;
+@property(strong) AB_BaseModel* model;
 
 @end

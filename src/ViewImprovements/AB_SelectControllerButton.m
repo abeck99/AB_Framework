@@ -1,6 +1,6 @@
 //
 //  AB_SelectControllerButton.m
-//  GoHeroClient
+
 //
 //  Created by phoebe on 5/31/15.
 //  Copyright (c) 2015 Hero. All rights reserved.
@@ -57,17 +57,17 @@
          NSNumber* isSelected = tuple[2];
          
          @strongify(self)
-         if (![isEnabled boolValue] && self.disabledColor)
+         if (![isEnabled boolValue] && self.disabledBackgroundColor)
          {
-             return self.disabledColor;
+             return self.disabledBackgroundColor;
          }
-         if ([isHighlighted boolValue] && self.highlightedColor)
+         if ([isHighlighted boolValue] && self.highlightedBackgroundColor)
          {
-             return self.highlightedColor;
+             return self.highlightedBackgroundColor;
          }
-         if ([isSelected boolValue] && self.selectedColor)
+         if ([isSelected boolValue] && self.selectedBackgroundColor)
          {
-             return self.selectedColor;
+             return self.selectedBackgroundColor;
          }
          return self.originalBackgroundColor;
      }];

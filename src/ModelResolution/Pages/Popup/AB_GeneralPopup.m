@@ -37,7 +37,7 @@
       withSignalsFromArray:@[RACObserve(self, model)]];
 }
 
-- (void) pushModel:(AB_ContentModel*)model
+- (void) pushModel:(AB_BaseModel*)model
 {
     dataSource.context = @"Popup";
     [dataSource setSection:self];
@@ -103,6 +103,11 @@
 - (void) popControllerWithAnimation:(id<UIViewControllerAnimatedTransitioning>)animation
 {
     [self close];
+}
+
+- (void) clearBackHistory
+{
+    
 }
 
 @end
