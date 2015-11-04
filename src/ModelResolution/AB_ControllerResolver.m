@@ -43,7 +43,7 @@
 
 - (instancetype) init
 {
-    if (self == [super init])
+    if (self = [super init])
     {
         modelToControllerTag = @{};
         controllerModelCallbacks = @{};
@@ -229,7 +229,7 @@
 
 - (instancetype) init
 {
-    if (self == [super init])
+    if (self = [super init])
     {
         resolvables = @[];
     }

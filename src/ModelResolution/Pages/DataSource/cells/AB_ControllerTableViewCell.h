@@ -9,11 +9,14 @@
 #import "AB_MultiTableViewCell.h"
 #import "AB_DataContainer.h"
 #import "AB_PassthroughView.h"
+#import "AB_SectionHeader.h"
 
 @interface AB_ControllerTableViewCell : AB_PassthroughView<AB_TableView>
 
 - (void) setController:(AB_Controller)controller
     withViewController:(AB_Controller)viewController
                section:(AB_Section)section;
+
+@property(strong) NSObject<AB_SectionHeader>* header;
 
 @end

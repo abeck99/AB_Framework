@@ -99,9 +99,7 @@
          {
              CGPoint pointInView = [subview convertPoint:point fromView:self];
              BOOL pointInside = [subview pointInside:pointInView withEvent:event];
-             
-             NSLog(@"View: %@ point Inside: %d", subview, pointInside);
-             
+                        
              return pointInside;
          });
 

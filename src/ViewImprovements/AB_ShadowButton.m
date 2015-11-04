@@ -37,7 +37,10 @@
     
     [pauseUpdates pauseDuringExecution:^
      {
-         self.originalBackgroundColor = self.backgroundColor;
+         if (!self.originalBackgroundColor && self.backgroundColor)
+         {
+             self.originalBackgroundColor = self.backgroundColor;
+         }
          
          RAC(self, backgroundColor) =
          [[[RACSignal

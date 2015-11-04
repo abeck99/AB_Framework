@@ -72,7 +72,6 @@
 
 // Utitlity
 - (id) initWithTableView:(UITableView*)tableView;
-- (CGFloat) heightForSectionType:(NSString*)sectionType withData:(id)data;
 - (AB_SectionInfo*) section:(int)sectionNum;
 
 - (void) startSpinny;

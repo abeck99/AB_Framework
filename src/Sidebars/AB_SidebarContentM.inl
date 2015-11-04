@@ -48,7 +48,7 @@
     ignoreLayoutChanges = YES;
     openRect = [self calculateOpenedRectInView:insideView];
     closedRect = [self calculateClosedRectInView:insideView];
-    NSLog(@"Open Rect: %@.... closed Rect: %@", NSStringFromCGRect(openRect), NSStringFromCGRect(closedRect));
+//    NSLog(@"Open Rect: %@.... closed Rect: %@", NSStringFromCGRect(openRect), NSStringFromCGRect(closedRect));
     ignoreLayoutChanges = NO;
     self.openAmount = self.openAmount;
 }

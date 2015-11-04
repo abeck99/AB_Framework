@@ -45,7 +45,7 @@
 
 - (instancetype) initWithNotificationName:(NSString*)notificationName object:(id)object
 {
-    if ( self == [super init])
+    if ( self = [super init])
     {
         _notificationName = notificationName;
         _object = object;

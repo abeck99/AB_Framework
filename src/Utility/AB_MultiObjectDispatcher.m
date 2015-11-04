@@ -21,7 +21,7 @@ typedef id(^GetObjectBlock)();
 
 - (instancetype) init
 {
-    if (self == [super init])
+    if (self = [super init])
     {
         responders = @[];
     }

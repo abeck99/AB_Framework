@@ -11,6 +11,6 @@
 @protocol AB_SectionHeader
 
 - (void) sectionHeaderInitItems;
-@property(assign) BOOL sectionOpen;
+@property(assign) CGFloat openAmount;
 
 @end

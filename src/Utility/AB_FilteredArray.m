@@ -10,7 +10,7 @@
 
 - (id) initWithArray:(NSArray*)setArray
 {
-    if ( self == [super init] )
+    if (self = [super init])
     {
         baseArray = [NSArray arrayWithArray:setArray];
         self.predicate = nil;

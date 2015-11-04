@@ -17,7 +17,7 @@
               withCancelBlock:(TransitionCancelledBlock)_cancelBlock
               withFinishBlock:(TransitionCompleteBlock)_completeBlock
 {
-    if ( self == [super init] )
+    if (self = [super init])
     {
         fromController = _fromController;
         toController = _toController;

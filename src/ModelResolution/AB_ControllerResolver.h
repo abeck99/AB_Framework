@@ -80,6 +80,6 @@ controller.propertyName = propertyName; \
 } \
 closeCallback:^(controllerClass* controller) \
 { \
-//controller.propertyName = nil; \
+ /*controller.propertyName = nil;*/ \
 }];
 

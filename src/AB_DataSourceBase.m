@@ -44,7 +44,7 @@
 
 - (id) initWithTableView:(UITableView*)theTableView
 {
-    if ( self == [super init] )
+    if (self = [super init])
     {
         [self setupWithTableView:theTableView];
     }
@@ -95,8 +95,17 @@
 {
     if ([sections containsObject:section])
     {
-        [tableView reloadSections:[NSIndexSet indexSetWithIndex:[sections indexOfObject:section]]
-                 withRowAnimation:UITableViewRowAnimationAutomatic];
+        NSUInteger sectionNumber = [sections indexOfObject:section];
+        NSMutableArray* mutableIndexPaths = [@[] mutableCopy];
+        for (int i=0; i<section.items.array.count; ++i)
+        {
+            [mutableIndexPaths addObject:[NSIndexPath indexPathForRow:i inSection:sectionNumber]];
+        }
+        
+        [tableView beginUpdates];
+        [tableView reloadRowsAtIndexPaths:[NSArray arrayWithArray:mutableIndexPaths]
+                         withRowAnimation:UITableViewRowAnimationAutomatic];
+        [tableView endUpdates];
     }
     [self scrollViewDidScroll:tableView];
     [updateSubject sendNext:@YES];
@@ -217,10 +226,6 @@
         
         if (section.headerView.superview == view)
         {
-            if (section.headerController.open)
-            {
-                NSLog(@"OPEN");
-            }
             return;
         }
 
@@ -241,8 +246,6 @@
 
             if ([view isKindOfClass:[UITableViewHeaderFooterView class]])
             {
-    //            UITableViewHeaderFooterView* builtInView = (UITableViewHeaderFooterView*)view;
-    //            builtInView.contentView.backgroundColor = [UIColor clearColor];
                 [view addSubview:section.headerView];
             }
             else
@@ -271,19 +274,6 @@
     
     [controllerToClose closeView];
     [mutableOpenHeaderControllers removeObject:controllerToClose];
-    
-//    if (sections.count <= sectionNum)
-//    {
-//        NSArray* subviews = view.subviews;
-//        NSLog(@"A PROBLEM ARISES! %@", subviews);
-//        return;
-//    }
-//    
-//    AB_SectionInfo* section = [self section:(int)sectionNum];
-//    if (section.headerController)
-//    {
-//        [section.headerController closeView];
-//    }
 }
 
 - (CGFloat)tableView:(UITableView *)tableView heightForHeaderInSection:(NSInteger)sectionNum
@@ -302,12 +292,6 @@
     return section.headerView
     ? section.headerView.frame.size.height
     : UITableViewAutomaticDimension;
-}
-
-
-- (CGFloat) heightForSectionType:(NSString*)sectionType withData:(id)data
-{
-    return [heights[sectionType] floatValue];
 }
 
 - (AB_SectionInfo*) section:(int)sectionNum
@@ -360,43 +344,6 @@
     }
     
     return 0;
-}
-
-- (CGFloat)tableView:(UITableView *)_tableView heightForRowAtIndexPath:(NSIndexPath *)indexPath
-{
-    if (_tableView.frame.size.height < 1.f)
-    {
-        return 0.f;
-    }
-    
-    AB_SectionInfo* section = [self section:(int) [indexPath section]];
-    
-    if ( section.numCellsPerRow == 0 )
-    {
-        return [self heightForSectionType:section.sectionType withData:section.items.array[[indexPath row]]];
-    }
-    else
-    {
-        CGFloat maxHeight = 0.f;
-        int startingRow = ((int) [indexPath row]) * section.numCellsPerRow;
-        for ( int i = 0; i < section.numCellsPerRow; i++ )
-        {
-            int dataIndex = startingRow + i;
-            id data = nil;
-            if ( dataIndex < section.items.array.count )
-            {
-                data = section.items.array[dataIndex];
-            }
-
-            CGFloat height = [self heightForSectionType:section.sectionType withData:data];
-            if ( height > maxHeight )
-            {
-                maxHeight = height;
-            }
-        }
-        
-        return maxHeight;
-    }
 }
 
 - (CGFloat)tableView:(UITableView *)tableView heightForFooterInSection:(NSInteger)section
@@ -469,6 +416,10 @@
             cell = [nib instantiateWithOwner:nil options:@{}][0];
             [cell setValue:reuseID forKey:@"reuseIdentifier"];
         }
+        
+        CGRect cellRect = cell.frame;
+        cellRect.size.width = theTableView.bounds.size.width;
+        cell.frame = cellRect;
 
         AB_MultiTableViewCell* multiCell = (AB_MultiTableViewCell*)cell;
         multiCell.nib = nibs[section.sectionType];
@@ -537,21 +488,36 @@
 
 - (CGFloat) expectedHeight
 {
-    CGFloat height = 0;
+    CGFloat height = 0.f;
 
     for (NSInteger sectionNum=0; sectionNum<sections.count; ++sectionNum)
     {
-        height += [self tableView:self.tableView heightForHeaderInSection:sectionNum];
+        CGFloat heightToAdd = [self tableView:self.tableView heightForHeaderInSection:sectionNum];
+        if (heightToAdd > 0.f)
+        {
+            // Add an extra pixel for seperator if the header view exists
+            height += 1.f;
+        }
+        height += heightToAdd;
 
         AB_SectionInfo* section = sections[sectionNum];
         for (NSInteger rowNum=0; rowNum<section.items.array.count; ++rowNum)
         {
             NSIndexPath* indexPath = [NSIndexPath indexPathForRow:rowNum inSection:sectionNum];
-            height += [self tableView:self.tableView heightForRowAtIndexPath:indexPath];
+            
+            UITableViewCell* cell = [self tableView:self.tableView cellForRowAtIndexPath:indexPath];
+            CGSize size = [cell sizeThatFits:CGSizeMake(self.tableView.bounds.size.width, CGFLOAT_MAX)];
+            height += size.height + 1.f;
         }
-        height += [self tableView:self.tableView heightForFooterInSection:sectionNum];
+        heightToAdd = [self tableView:self.tableView heightForFooterInSection:sectionNum];
+        if (heightToAdd > 0.f)
+        {
+            // Add an extra pixel for seperator if the header view exists
+            height += 1.f;
+        }
+        height += heightToAdd;
     }
-    
+
     return height;
 }
 

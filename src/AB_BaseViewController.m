@@ -93,6 +93,8 @@
 
 - (CGFloat) height
 {
+    
+    
     return heightDefiningView
     ? heightDefiningView.frame.size.height
     : self.view.frame.size.height;
@@ -180,13 +182,13 @@
                                 metrics:nil
                                 views:NSDictionaryOfVariableBindings(subview)]];
 
-    [insideView updateConstraints];
-    
-//        self.view.translatesAutoresizingMaskIntoConstraints = NO;
-//        self.view.frame = insideView.bounds;
-    
-    [insideView setNeedsLayout];
-    [insideView layoutIfNeeded];
+//    [insideView updateConstraints];
+//    
+////        self.view.translatesAutoresizingMaskIntoConstraints = NO;
+////        self.view.frame = insideView.bounds;
+//    
+//    [insideView setNeedsLayout];
+//    [self.view layoutIfNeeded];
     
     [self setOpen:YES];
     [openSubject sendNext:self];
@@ -207,6 +209,7 @@
 
 - (void) showExistingControllers
 {
+#if LOG_LIFECYCLE
     static NSUInteger i = 0;
     i = (i+1)%100;
     
@@ -217,6 +220,7 @@
             NSLog(@"\t%@\t%p\t%@", bc.sourceString, bc, bc.key);
         }
     }
+#endif
 }
 
 - (void) closeView

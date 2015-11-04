@@ -37,7 +37,7 @@
 
 - (id) initWithURL:(NSURL*)url verb:(NSString*)verb
 {
-    if ( self == [super init] )
+    if (self = [super init])
     {
         request = [NSMutableURLRequest requestWithURL:url
                                           cachePolicy:NSURLRequestReloadIgnoringLocalAndRemoteCacheData
@@ -112,7 +112,10 @@
     [self call];
     dispatch_semaphore_wait(sema, DISPATCH_TIME_FOREVER);
 
-    *err = failError;
+    if (err)
+    {
+        *err = failError;
+    }
     if ( !failError )
     {
         return downloadedData;

@@ -20,7 +20,7 @@
 
 - (instancetype) init
 {
-    if (self == [super init])
+    if (self = [super init])
     {
         subject = [RACSubject subject];
         set = [NSMutableOrderedSet orderedSet];

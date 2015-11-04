@@ -100,7 +100,11 @@
 - (void) layoutSubviews
 {
     [super layoutSubviews];
-    
+    [self fitCellFrames];
+}
+
+- (void) fitCellFrames
+{
     CGRect contentFrame = self.frame;
     contentFrame.origin = CGPointZero;
     
@@ -171,6 +175,31 @@
 {
     [super prepareForReuse];
     [self cleanViews];
+}
+
+- (CGSize)sizeThatFits:(CGSize)size
+{
+    CGFloat height = 0.f;
+    [self fitCellFrames];
+
+    for ( UIView* cell in _innerCells )
+    {
+        if (![self isValidObject:cell])
+        {
+            continue;
+        }
+        
+        if (fabs(cell.frame.size.width-size.width)>=1.f)
+        {
+            NSLog(@"Mismatch on width");
+        }
+        
+        CGSize cellSize = [cell sizeThatFits:CGSizeMake(cell.frame.size.width, size.height)];
+        height = MAX(height, cellSize.height);
+    }
+    size.height = height;
+
+    return size;
 }
 
 - (NSArray*) groupArray:(NSArray*)inArray groupSize:(int)groupSize enforceSize:(BOOL)enforceSize
