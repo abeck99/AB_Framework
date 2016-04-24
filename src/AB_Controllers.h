@@ -10,15 +10,23 @@
 
 @interface AB_Controllers : NSObject
 
++ (AB_Controllers*) get;
++ (void) set:(AB_Controllers*)newControllers;
+
 - (AB_Controller) controllerForTag:(id)key;
 - (AB_Controller) controllerForTag:(id)key source:(NSString*)sourceString;
 - (NSInteger) tagForController:(AB_Controller)controller;
 
 - (NSDictionary*) getControllers;
 
-- (void) returnControllerToPool:(AB_Controller)controller;
+- (void) preloadControllers:(NSDictionary*)controllerPreloads;
+
+- (void) cleanPool;
+
+@property(assign) BOOL showDebugLabels;
+
+- (void) checkForRetainCycles;
+
+- (BOOL) isInPool:(AB_Controller)controller;
 
 @end
-
-AB_Controllers* getController();
-void setController(AB_Controllers* newControllers);

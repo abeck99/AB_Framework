@@ -7,6 +7,7 @@
 //
 
 #import <UIKit/UIKit.h>
+#import "AB_PassthroughView.h"
 
 @protocol AB_TableView
 
@@ -14,9 +15,9 @@
 
 @end
 
-@interface AB_MultiTableViewCell : UITableViewCell
+@interface AB_MultiTableViewCell : AB_PassthroughTableViewCell
 {
-    IBOutlet UIView* realContentView;
+    UIView* innerContentView;
 }
 
 - (void) setData:(NSArray*)data;
@@ -25,6 +26,7 @@
 @property(strong) UINib* nib;
 @property(strong) UINib* emptyNib;
 @property(assign) BOOL retainInnerCellSize;
+@property(assign) CGFloat cellSpacing;
 
 - (NSArray*) groupArray:(NSArray*)inArray groupSize:(int)groupSize enforceSize:(BOOL)enforceSize;
 

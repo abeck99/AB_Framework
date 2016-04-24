@@ -30,6 +30,16 @@
 @synthesize emptyNib;
 @synthesize retainInnerCellSize;
 
+- (instancetype) initWithStyle:(UITableViewCellStyle)style reuseIdentifier:(NSString *)reuseIdentifier
+{
+    if (self = [super initWithStyle:style reuseIdentifier:reuseIdentifier])
+    {
+        innerContentView = [[AB_PassthroughView alloc] initWithFrame:self.frame];
+        [self.contentView addSubview:innerContentView];
+    }
+    return self;
+}
+
 - (BOOL) isValidObject:(id)obj
 {
     return obj != [NSNull null];
@@ -89,7 +99,7 @@
         
         if ( [self isValidObject:cell] )
         {
-            [realContentView addSubview:cell];
+            [innerContentView addSubview:cell];
         }
         [newInnerCells addObject:cell];
     }
@@ -108,10 +118,10 @@
     CGRect contentFrame = self.frame;
     contentFrame.origin = CGPointZero;
     
-    realContentView.frame = contentFrame;
+    innerContentView.frame = contentFrame;
     
-    contentFrame.size.width /= _innerCells.count;
-
+    contentFrame.size.width = (contentFrame.size.width - ((_innerCells.count - 1) * self.cellSpacing))/_innerCells.count;
+    
     if ( self.retainInnerCellSize )
     {
         for ( UIView* cell in _innerCells )
@@ -138,7 +148,7 @@
             }
 
             cell.frame = contentFrame;
-            contentFrame.origin.x += contentFrame.size.width;
+            contentFrame.origin.x += contentFrame.size.width + self.cellSpacing;
             [cell setNeedsLayout];
         }
     }
@@ -159,7 +169,7 @@
     validCells = validCells ? validCells : @[];
     emptyCells = emptyCells ? emptyCells : @[];
 
-    for ( UIView* view in realContentView.subviews )
+    for (UIView* view in innerContentView.subviews)
     {
         if ([view conformsToProtocol:@protocol(AB_TableView)])
         {
@@ -173,6 +183,14 @@
 
 - (void) prepareForReuse
 {
+    for ( UIView* cell in _innerCells )
+    {
+        if ([cell respondsToSelector:@selector(prepareForReuse)])
+        {
+            [(UITableViewCell*)cell prepareForReuse];
+        }
+    }
+
     [super prepareForReuse];
     [self cleanViews];
 }
@@ -189,10 +207,11 @@
             continue;
         }
         
-        if (fabs(cell.frame.size.width-size.width)>=1.f)
-        {
-            NSLog(@"Mismatch on width");
-        }
+//        CGFloat sizeDif = fabs(cell.frame.size.width-size.width);
+//        if (sizeDif>=1.f)
+//        {
+//            NSLog(@"Mismatch on width: %g", sizeDif);
+//        }
         
         CGSize cellSize = [cell sizeThatFits:CGSizeMake(cell.frame.size.width, size.height)];
         height = MAX(height, cellSize.height);

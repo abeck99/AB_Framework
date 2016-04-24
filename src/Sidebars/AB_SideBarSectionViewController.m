@@ -35,13 +35,5 @@
 
 CGFloat EasingFunction(CGFloat p)
 {
-    if(p < 0.5)
-    {
-        return 8 * p * p * p * p;
-    }
-    else
-    {
-        CGFloat f = (p - 1);
-        return -8 * f * f * f * f + 1;
-    }
+    return -(p * (p - 2));
 }

@@ -241,6 +241,11 @@
     
 }
 
+- (void) setOpened:(BOOL)opened animated:(BOOL)isAnimated
+{
+    [self setOpened:opened animated:isAnimated forced:NO];
+}
+
 - (void) setOpened:(BOOL)opened animated:(BOOL)isAnimated forced:(BOOL)isForced
 {
     if (!isForced && opened == self.sliderOpen)

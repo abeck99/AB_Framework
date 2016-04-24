@@ -193,9 +193,9 @@
     
     if (currentController)
     {
-        [self controllerWillChange:currentController];
+//        [self controllerWillChange:currentController];
         [currentController openInView:contentView withViewParent:self inSection:self];
-        [self controllerDidChange];
+//        [self controllerDidChange];
     }
 }
 
@@ -203,6 +203,7 @@
 {
     [super closeView];
     [[self currentController] closeView];
+    [self internalSetCurrentController:nil];
 }
 
 - (BOOL) canPopController
@@ -338,7 +339,7 @@
                       forceOpen:(BOOL)forceOpen
                     pushOnState:(BOOL)shouldPushOnState
 {
-    AB_Controller sectionController = [getController() controllerForTag:name];
+    AB_Controller sectionController = [[AB_Controllers get] controllerForTag:name];
     [self pushController:sectionController
          withConfigBlock:configurationBlock
            withAnimation:animation
@@ -397,18 +398,13 @@
              pushOnState:YES];
 }
 
-- (void) pushController:(AB_Controller)sectionController
+- (void) pushController:(AB_Controller)newController
         withConfigBlock:(CreateControllerBlock)configurationBlock
           withAnimation:(id<UIViewControllerAnimatedTransitioning>)animation
               forceOpen:(BOOL)forceOpen
             pushOnState:(BOOL)shouldPushOnState
 {
-    id name = sectionController.key;
-    
-    if (configurationBlock)
-    {
-        configurationBlock(sectionController);
-    }
+    id name = newController.key;
     
     ConfirmBlock switchBlock = ^(BOOL confirmed)
     {
@@ -427,12 +423,26 @@
 
         if (finalAnimation)
         {
-            [self replaceController:sectionController
+            [[NSOperationQueue mainQueue]
+             addOperationWithBlock:^
+             {
+                 if (configurationBlock)
+                 {
+                     configurationBlock(newController);
+                 }
+             }];
+
+            [self replaceController:newController
                       withAnimation:finalAnimation];
         }
         else
         {
-            [self replaceController:sectionController];
+            if (configurationBlock)
+            {
+                configurationBlock(newController);
+            }
+
+            [self replaceController:newController];
         }
     };
     
@@ -447,7 +457,7 @@
         {
             [currentController
              allowChangeController:switchBlock
-             toController:sectionController];
+             toController:newController];
         }
         else
         {
@@ -458,17 +468,36 @@
 
 - (void) popControllerWithAnimation:(id<UIViewControllerAnimatedTransitioning>)animation
 {
-    NSDictionary* state = [self popStateFromStack];
-    if (state)
+    ConfirmBlock switchBlock = ^(BOOL confirmed)
     {
-        [self pushControllerWithName:state[@"tag"]
-                     withConfigBlock:^(AB_Controller controller)
+        if (!confirmed)
         {
-            [controller applyDescription:state];
+            return;
         }
-                       withAnimation:animation
-                           forceOpen:YES
-                         pushOnState:NO];
+
+        NSDictionary* state = [self popStateFromStack];
+        if (state)
+        {
+            [self pushControllerWithName:state[@"tag"]
+                         withConfigBlock:^(AB_Controller controller)
+            {
+                [controller applyDescription:state];
+            }
+                           withAnimation:animation
+                               forceOpen:YES
+                             pushOnState:NO];
+        }
+    };
+    
+    AB_Controller currentController = [self currentController];
+    if (currentController)
+    {
+        [currentController
+         allowPopController:switchBlock];
+    }
+    else
+    {
+        switchBlock(YES);
     }
 }
 
@@ -477,7 +506,7 @@
     CGRect frameTest = self.contentView.bounds;
     NSLog(@"Bounds width: %g", frameTest.size.width);
     
-    AB_Controller sectionController = [getController() controllerForTag:controllerName];
+    AB_Controller sectionController = [[AB_Controllers get] controllerForTag:controllerName];
     [self replaceController:sectionController];
 }
 
@@ -541,6 +570,7 @@
         [lastTransition
          addCompleteBlock:^(AB_TransitionContextObject* contextObject)
          {
+             NSLog(@"replaceController lastTransition complete...");
              [self controllerWillChange:newController];
              
              [newController openInView:self.contentView
@@ -557,6 +587,7 @@
         [lastTransition
          addCancelBlock:^(AB_TransitionContextObject* contextObject)
          {
+             NSLog(@"replaceController lastTransition cancel...");
              [self controllerWillChange:newController];
              
              [newController openInView:self.contentView

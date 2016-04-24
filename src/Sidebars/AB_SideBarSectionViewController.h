@@ -36,5 +36,6 @@
 @property(assign) IBInspectable CGFloat openConstant;
 
 - (IBAction) toggleOpened:(id)sender;
+- (void) setOpened:(BOOL)opened animated:(BOOL)isAnimated;
 
 @end

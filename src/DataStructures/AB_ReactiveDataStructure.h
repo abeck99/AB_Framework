@@ -10,6 +10,6 @@
 
 @protocol AB_ReactiveDataStructure
 
-@property(readonly) RACSignal* valueSignal;
+@property(readonly, strong) RACSignal* valueSignal;
 
 @end

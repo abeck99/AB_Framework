@@ -12,5 +12,6 @@
 
 - (void) sectionHeaderInitItems;
 @property(assign) CGFloat openAmount;
+@property(strong) RACCommand* toggleOpenCommand;
 
 @end

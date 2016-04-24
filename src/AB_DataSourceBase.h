@@ -9,6 +9,7 @@
 #import <UIKit/UIKit.h>
 #import "ReactiveCocoa.h"
 #import "AB_DataContainer.h"
+#import "AB_BaseModel.h"
 
 @interface AB_SectionInfo : NSObject
 
@@ -18,17 +19,18 @@
 @property(strong) AB_FilteredArray* items;
 @property(strong) NSString* sectionType;
 @property(assign) int numCellsPerRow;
+@property(assign) CGFloat cellSpacing;
 @property(strong) NSURL* nextURL;
 @property(assign) BOOL retainMultiCellSize;
 @property(assign) BOOL equalSizeColumns;
 @property(strong) AB_Controller headerController;
 @property(weak) AB_Controller headerControllerParent;
+@property(strong) AB_BaseModel* headerModel;
 @property(strong) UIView* headerView;
 
 - (int) numRows;
 
 @end
-
 
 @interface AB_DataSourceBase : NSObject<UITableViewDataSource, UITableViewDelegate>
 {
@@ -84,9 +86,11 @@
 - (BOOL) testAsyncCheckObject:(id)object;
 - (CGFloat) expectedHeight;
 
+- (NSArray*) visibleCells;
+
 @property(strong) IBOutlet UIActivityIndicatorView* spinny;
 @property(strong) IBOutlet UILabel* emptyLabel;
-@property(readonly) IBOutlet UITableView* tableView;
-@property(readonly) RACSignal* updateSignal;
+@property(readonly, strong) IBOutlet UITableView* tableView;
+@property(readonly, strong) RACSignal* updateSignal;
 
 @end

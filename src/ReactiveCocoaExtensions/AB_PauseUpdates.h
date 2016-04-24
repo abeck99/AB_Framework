@@ -18,12 +18,18 @@
 - (void) pushPause;
 - (void) popPause;
 
+- (void) pushNamedPause:(NSString*)name;
+- (void) popNamedPause:(NSString*)name;
+
 @end
 
 
 @interface RACSignal(PauseObjectExtension)
 
+- (RACSignal*) debugPause:(AB_PauseUpdates*)pauseObject; // Resumes when object is unpaused
+
 // If pause object is nil (or is deallocated while the signal is ongoing), will assume not paused
-- (RACSignal*) pause:(AB_PauseUpdates*)pauseObject;
+- (RACSignal*) pause:(AB_PauseUpdates*)pauseObject; // Resumes when object is unpaused
+- (RACSignal*) ignoreWhile:(AB_PauseUpdates*)pauseObject; // Completely ignores any changes when object is paused
 
 @end

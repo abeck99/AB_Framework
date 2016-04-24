@@ -12,10 +12,10 @@
 @interface AB_GeneralPopup : AB_Popup<AB_SectionContainer>
 {
     IBOutlet AB_PageDataSource* dataSource;
-    IBOutlet UIView* heightReferenceView;
     IBOutlet NSLayoutConstraint* tableViewHeightConstraint;
 }
 
-@property(strong) AB_BaseModel* model;
+@property(strong) NSArray* contexts;
+@property(strong) NSArray* models;
 
 @end

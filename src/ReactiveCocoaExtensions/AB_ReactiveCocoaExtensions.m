@@ -12,6 +12,23 @@
 
 @implementation RACSignal(AB_Extensions)
 
+- (instancetype)distinctUntilChangedDebug {
+    Class class = self.class;
+    
+    return [[self bind:^{
+        __block id lastValue = nil;
+        __block BOOL initial = YES;
+        
+        return ^(id x, BOOL *stop) {
+            if (!initial && (lastValue == x || [x isEqual:lastValue])) return [class empty];
+            
+            initial = NO;
+            lastValue = x;
+            return [class return:x];
+        };
+    }] setNameWithFormat:@"[%@] -distinctUntilChanged", self.name];
+}
+
 // TODO: Potentially reusable?
 - (instancetype) mapToDictionaryKey:(NSString*)key
 {
@@ -127,38 +144,53 @@
 
 - (instancetype) promise
 {
-    __block id retValue = nil;
-    __block BOOL restart = YES;
+    __block id curValue = nil;
+    __block BOOL firstRun = YES;
+    __block BOOL finished = NO;
+    __block NSError* curError = nil;
     __block RACSignal* publishedSignal = nil;
     
     return [RACSignal createSignal:^RACDisposable*(id<RACSubscriber>subscriber)
             {
-                if (retValue)
+                if (curValue)
                 {
-                    [subscriber sendNext:retValue];
+                    [subscriber sendNext:curValue];
+                }
+                
+                if (curError)
+                {
+                    [subscriber sendError:curError];
+                    return nil;
+                }
+
+                if (finished)
+                {
                     [subscriber sendCompleted];
                     return nil;
                 }
                 
-                if (restart)
+                if (firstRun)
                 {
                     publishedSignal = [[self publish] autoconnect];
                 }
+
+                firstRun = NO;
                 
                 return
                 [publishedSignal
                  subscribeNext:^(id x)
                  {
-                     retValue = x;
+                     curValue = x;
                      [subscriber sendNext:x];
                  }
                  error:^(NSError* error)
                  {
-                     restart = YES;
+                     curError = error;
                      [subscriber sendError:error];
                  }
                  completed:^
                  {
+                     finished = YES;
                      [subscriber sendCompleted];
                  }];
             }];
@@ -183,6 +215,91 @@
 - (instancetype) noop
 {
     return self;
+}
+
+- (instancetype) mapNilsTo:(id)val
+{
+    return [self
+            map:^(id x)
+            {
+                return x == nil ? val : x;
+            }];
+}
+
+- (instancetype) throttle:(NSTimeInterval)interval orMaxCount:(int)maxCount
+{
+    NSCParameterAssert(interval >= 0);
+    
+    return [[RACSignal createSignal:^(id<RACSubscriber> subscriber) {
+        RACCompoundDisposable *compoundDisposable = [RACCompoundDisposable compoundDisposable];
+        
+        // We may never use this scheduler, but we need to set it up ahead of
+        // time so that our scheduled blocks are run serially if we do.
+        RACScheduler *scheduler = [RACScheduler scheduler];
+        
+        // Information about any currently-buffered `next` event.
+        __block id nextValue = nil;
+        __block int nextValueCount = 0;
+        RACSerialDisposable *nextDisposable = [[RACSerialDisposable alloc] init];
+        
+        void (^flushNext)() = ^{
+            @synchronized (compoundDisposable) {
+                [nextDisposable.disposable dispose];
+                
+                if (nextValueCount > 0)
+                {
+                    [subscriber sendNext:nextValue];
+                }
+                
+                nextValue = nil;
+                nextValueCount = 0;
+            }
+        };
+        
+        RACDisposable *subscriptionDisposable = [self subscribeNext:^(id x) {
+            RACScheduler *delayScheduler = RACScheduler.currentScheduler ?: scheduler;
+            
+            @synchronized (compoundDisposable) {
+                [nextDisposable.disposable dispose];
+                nextValue = x;
+                nextValueCount++;
+                if (nextValueCount >= maxCount)
+                {
+                    flushNext();
+                }
+                else
+                {
+                    nextDisposable.disposable = [delayScheduler afterDelay:interval schedule:^{
+                        flushNext();
+                    }];
+                }
+            }
+        } error:^(NSError *error) {
+            [compoundDisposable dispose];
+            [subscriber sendError:error];
+        } completed:^{
+            flushNext();
+            [subscriber sendCompleted];
+        }];
+        
+        [compoundDisposable addDisposable:subscriptionDisposable];
+        return compoundDisposable;
+    }] setNameWithFormat:@"[%@] -throttle: %f valuesPassingTest:", self.name, (double)interval];
+}
+
+- (instancetype) takeWhen:(RACSignal*)boolSignal
+{
+    return [[[RACSignal combineLatest:@[self, boolSignal]]
+            filter:^BOOL(RACTuple* tuple)
+            {
+                NSNumber* shouldAllow = tuple[1];
+                return [shouldAllow isValid] ? [shouldAllow boolValue] : NO;
+            }]
+            map:^id(RACTuple* tuple)
+            {
+                id x = tuple[0];
+                return [x isValid] ? x : nil;
+            }];
 }
 
 

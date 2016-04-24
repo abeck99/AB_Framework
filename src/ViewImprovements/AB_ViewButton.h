@@ -22,7 +22,7 @@ IB_DESIGNABLE
     IBOutlet UIView* normalDisabledView;
 }
 
-@property(readonly) UIView* currentView;
+@property(readonly, strong) UIView* currentView;
 @property(readonly) IBInspectable BOOL stretchesView;
 
 @end

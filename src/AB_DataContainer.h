@@ -38,6 +38,7 @@ typedef NSObject<AB_SectionContainer>* AB_Section;
 
 - (void) allowChangeController:(ConfirmBlock)confirmBlock
                   toController:(AB_Controller)newController;
+- (void) allowPopController:(ConfirmBlock)confirmBlock;
 
 - (NSArray*) sidebars;
 
@@ -47,10 +48,11 @@ typedef NSObject<AB_SectionContainer>* AB_Section;
 @property(nonatomic,retain) UIView *view;
 @property(readonly) BOOL open;
 
-- (void) addChildViewController:(UIViewController *)childController;
-- (void) removeFromParentViewController;
+//- (void) addChildViewController:(UIViewController *)childController;
+//- (void) removeFromParentViewController;
 
 @property(readonly) CGFloat height;
+@property(readonly) CGFloat width;
 
 - (void) addRetainObject:(id)obj;
 
@@ -59,7 +61,10 @@ typedef NSObject<AB_SectionContainer>* AB_Section;
 - (RACSignal*)openSignal;
 - (RACSignal*)closeSignal;
 
+- (void) prepareForReuse;
 - (void) setCloseBlock:(CloseControllerBlock)closeBlock;
+
++ (BOOL) shouldCache;
 
 @end
 

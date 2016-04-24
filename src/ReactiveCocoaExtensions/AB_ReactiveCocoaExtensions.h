@@ -25,6 +25,14 @@
 - (instancetype) extractErrorsToBlock:(void (^)(NSError *error))errorBlock;
 - (instancetype) noop;
 
+- (instancetype)distinctUntilChangedDebug;
+
+- (instancetype) mapNilsTo:(id)val;
+
+- (instancetype) throttle:(NSTimeInterval)interval orMaxCount:(int)maxCount;
+
+- (instancetype) takeWhen:(RACSignal*)boolSignal;
+
 @end
 
 @interface NSObject(AB_ReactiveCocoaExtensions)
@@ -35,3 +43,5 @@
 - (BOOL) isValid;
 
 @end
+
+#define VALID_VALUE_FROM_ARRAY(arrName, index) ([arrName[index] isValid] ? arrName[index] : nil)

@@ -16,5 +16,6 @@
 - (id<UIViewControllerAnimatedTransitioning>) pan;
 - (id<UIViewControllerAnimatedTransitioning>) reversePan;
 - (id<UIViewControllerAnimatedTransitioning>) crossFade;
+- (id<UIViewControllerAnimatedTransitioning>) crossFadeWithDuration:(CGFloat)duration;
 
 @end

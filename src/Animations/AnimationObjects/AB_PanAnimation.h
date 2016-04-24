@@ -22,3 +22,14 @@
 - (void)animateTransition:(id<UIViewControllerContextTransitioning>)transitionContext fromVC:(UIViewController *)fromVC toVC:(UIViewController *)toVC fromView:(UIView *)fromView toView:(UIView *)toView;
 
 @end
+
+@interface AB_FadeAnimation : NSObject <UIViewControllerAnimatedTransitioning>
+
+/**
+ The animation duration.
+ */
+@property (nonatomic, assign) NSTimeInterval duration;
+
+- (void)animateTransition:(id<UIViewControllerContextTransitioning>)transitionContext fromVC:(UIViewController *)fromVC toVC:(UIViewController *)toVC fromView:(UIView *)fromView toView:(UIView *)toView;
+
+@end

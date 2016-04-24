@@ -34,14 +34,26 @@
     [super setup];
     
     [self rac_liftSelector:@selector(pushModel:)
-      withSignalsFromArray:@[RACObserve(self, model)]];
+      withSignalsFromArray:@[RACObserve(self, models)]];
 }
 
-- (void) pushModel:(AB_BaseModel*)model
+- (void) pushModel:(NSArray*)models
 {
-    dataSource.context = @"Popup";
+    NSMutableArray* mutableFullContexts = [@[] mutableCopy];
+    for (NSString* context in self.contexts)
+    {
+        if ([context caseInsensitiveCompare:@""] == NSOrderedSame)
+        {
+            NSLog(@"BREAK");
+        }
+        [mutableFullContexts addObject:context];
+    }
+    [mutableFullContexts addObject:@"Popup"];
+    NSArray* fullContexts = [NSArray arrayWithArray:mutableFullContexts];
+
+    dataSource.contexts = fullContexts;
     [dataSource setSection:self];
-    dataSource.contentModels = model ? @[model] : @[];
+    dataSource.contentModels = models ? models : @[];
     tableViewHeightConstraint.constant = [dataSource expectedHeight];
     
     [self updateConstraints];
@@ -56,11 +68,6 @@
     }
     
     dataSource.tableView.scrollEnabled = YES;
-    
-    CGRect selfFrame = self.frame;
-    selfFrame.size.height = heightReferenceView.frame.size.height;
-    self.frame = selfFrame;
-    
     [self recalculateDestination];
 }
 
@@ -83,7 +90,6 @@
                 withConfigBlock:(CreateControllerBlock)configurationBlock
                   withAnimation:(id<UIViewControllerAnimatedTransitioning>)animation
                 shouldPushState:(BOOL)shouldPushState;{}
-
 - (void) pushController:(AB_Controller)sectionController;{}
 - (void) pushController:(AB_Controller)sectionController
               forceOpen:(BOOL)forceOpen
@@ -95,6 +101,7 @@
 - (void) pushController:(AB_Controller)sectionController
         withConfigBlock:(CreateControllerBlock)configurationBlock
           withAnimation:(id<UIViewControllerAnimatedTransitioning>)animation;{}
+- (void) pushControllerWithName:(id)name withConfigBlock:(CreateControllerBlock)configurationBlock withAnimation:(id<UIViewControllerAnimatedTransitioning>)animation forceOpen:(BOOL)forceOpen pushOnState:(BOOL)shouldPushOnState{}
 
 - (void) popController
 {

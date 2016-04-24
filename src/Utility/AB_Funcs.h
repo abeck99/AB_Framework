@@ -11,6 +11,8 @@
 #define RETURN_THREAD_SAFE_NIB(nibName) static dispatch_once_t pred; static UINib* ret = nil; dispatch_once (&pred, ^{ ret = [UINib nibWithNibName:@nibName bundle:[NSBundle mainBundle]];}); return ret;
 
 
+#define METERS_TO_MILES 0.000621371
+
 void printAllSubviews(UIView* view, int depth);
 
 void AdjustViewToHeight(UIView* root, UIView* viewToAdjust, CGFloat height);
@@ -23,6 +25,7 @@ CGSize CGSizeMultiplyScalar(CGSize size, CGFloat scalar);
 CGSize CGSizeAdd(CGSize a, CGSize b);
 CGSize CGSizeAddScalar(CGSize point, CGFloat scalar);
 CGRect CGRectFromComponents(CGSize point, CGSize size);
+CGRect CGRectFromCenter(CGPoint point, CGSize size);
 
 CGSize CGSizeXComponent(CGSize size);
 CGSize CGSizeYComponent(CGSize size);

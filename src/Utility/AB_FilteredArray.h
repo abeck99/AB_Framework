@@ -20,7 +20,7 @@
 - (void) replaceIndex:(int)index withItem:(id)newItem;
 
 @property(strong) NSPredicate* predicate;
-@property(readonly) NSArray* array;
-@property(readonly) NSArray* fullArray;
+@property(readonly, strong) NSArray* array;
+@property(readonly, strong) NSArray* fullArray;
 
 @end

@@ -34,7 +34,7 @@
 {
     NSLocale* usLocale = [NSLocale localeWithLocaleIdentifier:@"en_US"];
     NSString* dateFormat = [NSDateFormatter
-                            dateFormatFromTemplate:@"dMMMhma"
+                            dateFormatFromTemplate:@"EEEEdMMMMha"
                             options:0
                             locale:usLocale];
     NSDateFormatter* dateFormatter = [[NSDateFormatter alloc] init];
@@ -42,7 +42,7 @@
     dateFormatter.locale = usLocale;
     dateFormatter.calendar = [NSCalendar calendarWithIdentifier:NSCalendarIdentifierGregorian];
     
-    return [dateFormatter stringFromDate:self];
+    return [[[dateFormatter stringFromDate:self] stringByReplacingOccurrencesOfString:@"AM" withString:@"am"] stringByReplacingOccurrencesOfString:@"PM" withString:@"pm"];
 }
 
 @end

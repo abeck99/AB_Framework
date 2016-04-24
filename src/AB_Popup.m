@@ -84,6 +84,13 @@
         
 - (void) recalculateDestination
 {
+    if (heightReferenceView)
+    {
+        CGRect selfFrame = self.frame;
+        selfFrame.size.height = heightReferenceView.frame.size.height;
+        self.frame = selfFrame;
+    }
+
     switch (self.popupState)
     {
         case PopupState_ReturningToPending:
@@ -130,8 +137,15 @@
 {
     UINib* nib = [[self class] baseNib];
     NSArray* arrayOfViews = [nib instantiateWithOwner:nil options:nil];
-    AB_Popup* view = [arrayOfViews objectAtIndex:0];
-    return view;
+    
+    for (AB_Popup* p in arrayOfViews)
+    {
+        if ([p isKindOfClass:[AB_Popup class]])
+        {
+            return p;
+        }
+    }
+    return nil;
 }
 
 - (CGRect) pendingFrame
@@ -263,16 +277,27 @@
 {
     UIView* containerView = viewController.view;
     CGRect blockingFrame = containerView.bounds;
-    blockingView = [[UIView alloc] initWithFrame:blockingFrame];
+
+    if (self.blurBackground)
+    {
+        blockingView = [[UIVisualEffectView alloc] initWithEffect:[UIBlurEffect effectWithStyle:UIBlurEffectStyleDark]];
+        blockingView.backgroundColor = [UIColor clearColor];
+        blockingView.frame = blockingFrame;
+    }
+    else
+    {
+        blockingView = [[UIView alloc] initWithFrame:blockingFrame];
+        blockingView.backgroundColor = self.blockingViewColor
+            ? self.blockingViewColor
+            : [UIColor colorWithRed:21.f/255.f
+                          green:21.f/255.f
+                           blue:21.f/255.f
+                          alpha:0.25f];
+
+    }
     
     [containerView insertSubview:blockingView belowSubview:self];
 
-    blockingView.backgroundColor = self.blockingViewColor
-        ? self.blockingViewColor
-        : [UIColor colorWithRed:21.f/255.f
-                      green:21.f/255.f
-                       blue:21.f/255.f
-                      alpha:0.25f];
     blockingView.userInteractionEnabled = YES;
     blockingView.alpha = 0.f;
     blockingView.autoresizingMask =
@@ -505,6 +530,13 @@
     AB_Popup* newPopup = [popupClass get];
     newPopup.viewController = self;
     
+    if (newPopup.fillScreen)
+    {
+        CGRect popupRect = newPopup.frame;
+        popupRect.size = self.view.frame.size;
+        newPopup.frame = popupRect;
+    }
+    
     AB_Popup* popupAboveNew =
     [self popups]
     .filter(^BOOL(AB_Popup* popup)
@@ -600,6 +632,17 @@
             {
               [popup close];
             });
+}
+
+- (NSArray*) popupsOfType:(Class)popupClass
+{
+   return
+    [self popups]
+    .filter(^BOOL(id obj)
+            {
+                return [obj isKindOfClass:popupClass];
+            })
+    .unwrap;
 }
 
 - (void) closeAllPopupsExcept:(NSArray*)popupClasses

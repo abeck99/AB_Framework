@@ -10,7 +10,6 @@
 
 @interface AB_ControllerTableViewCell()
 {
-    AB_Controller _controller;
     UIView* _view;
 }
 
@@ -39,12 +38,27 @@
     CGRect selfFrame = self.frame;
     selfFrame.size.height = controller.height;
     self.frame = selfFrame;
+    
+    self.backgroundColor = _view.backgroundColor;
 }
 
 - (void) layoutSubviews
 {
     [super layoutSubviews];
     _view.frame = self.bounds;
+    _view.hidden = self.frame.size.height <= 1.00001f;
+
+//    if ([_controller isKindOfClass:[AB_BaseCellViewController class]])
+//    {
+//        AB_BaseCellViewController* c = (AB_BaseCellViewController*)_controller;
+//        
+//        c.isExpanded = self.frame.size.height > 1.00001f;
+//        _view.hidden = self.frame.size.height <= 1.00001f;
+//    }
+//    else
+//    {
+//        _view.hidden = self.frame.size.height <= 1.00001f;
+//    }
 }
 
 - (void) prepareForReuse
@@ -73,5 +87,35 @@
     }
     return size;
 }
+
+@end
+
+@implementation AB_BaseCellViewController
+
+//- (void) bind
+//
+//{
+//    [super bind];
+//    
+//    NSArray* capturedOpenViews = openViews;
+//    NSArray* capturedClosedViews = closedViews;
+//    
+//    
+//    [[RACObserve(self, isExpanded) distinctUntilChanged]
+//     subscribeNext:^(NSNumber* isExpandedO)
+//     {
+//         BOOL isExpanded = [isExpandedO boolValue];
+//         
+//         for (UIView* v in capturedOpenViews)
+//         {
+//             v.hidden = !isExpanded;
+//         }
+//
+//         for (UIView* v in capturedClosedViews)
+//         {
+//             v.hidden = isExpanded;
+//         }
+//     }];
+//}
 
 @end

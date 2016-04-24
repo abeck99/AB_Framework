@@ -6,12 +6,24 @@
 
 #import "AB_Controllers.h"
 #import "AB_SectionViewController.h"
+#import "ReactiveCocoa.h"
+#import "AB_ReactiveCocoaExtensions.h"
+
+#define DEBUG_NUM_CONTROLLERS 0
 
 @interface AB_Controllers()
 {
     NSDictionary* controllers;
     NSMutableDictionary* nibs;
     NSMutableDictionary* controllerPool;
+    
+    NSDictionary* preloadControllers;
+
+#if DEBUG_NUM_CONTROLLERS
+    NSMutableDictionary* controllerCount;
+#endif
+    
+    
 }
 
 @end
@@ -19,17 +31,17 @@
 // TODO: Make this into something that each controller keeps a reference to the controller factory, this global call is not good
 AB_Controllers* gControllers = nil;
 
-AB_Controllers* getController()
+@implementation AB_Controllers
+
++ (AB_Controllers*) get
 {
     return gControllers;
 }
 
-void setController(AB_Controllers* newControllers)
++ (void) set:(AB_Controllers*)newControllers
 {
     gControllers = newControllers;
 }
-
-@implementation AB_Controllers
 
 - (id) init
 {
@@ -43,6 +55,9 @@ void setController(AB_Controllers* newControllers)
  */
         controllers = [self getControllers];
         controllerPool = [@{} mutableCopy];
+#if DEBUG_NUM_CONTROLLERS
+        controllerCount = [@{} mutableCopy];
+#endif
         [self loadNibs];
         
         [[UITableViewCell appearance] setBackgroundColor:[UIColor clearColor]];
@@ -84,27 +99,30 @@ void setController(AB_Controllers* newControllers)
 
     id defaultKey = [controllerDesc objectForKey:@"defaultController"];
 
-    NSMutableArray* pool = controllerPool[key];
-    if (pool.count > 0)
+    @synchronized(controllerPool)
     {
-        AB_Controller retController = pool[0];
-        [pool removeObject:retController];
-        retController.sourceString = sourceString;
-        
-        if ([retController conformsToProtocol:@protocol(AB_SectionContainer)])
+        NSMutableSet* pool = controllerPool[key];
+        if (pool.count > 0)
         {
-            AB_Section section = (AB_Section)retController;
+            AB_Controller retController = [pool anyObject];
+            [pool removeObject:retController];
+            retController.sourceString = sourceString;
             
-            [section clearBackHistory];
-            
-            if (defaultKey)
+            if ([retController conformsToProtocol:@protocol(AB_SectionContainer)])
             {
-                AB_Controller subcontroller = [self controllerForTag:defaultKey];
-                [section pushController:subcontroller];
+                AB_Section section = (AB_Section)retController;
+                
+                [section clearBackHistory];
+                
+                if (defaultKey)
+                {
+                    AB_Controller subcontroller = [self controllerForTag:defaultKey];
+                    [section pushController:subcontroller];
+                }
             }
+            
+            return retController;
         }
-        
-        return retController;
     }
     
     Class class = controllerDesc[@"class"];
@@ -147,7 +165,7 @@ void setController(AB_Controllers* newControllers)
     }
     
     
-    if ( !retController.view )
+    if (!retController.view)
     {
         [NSException
          raise:NSInvalidArgumentException
@@ -159,7 +177,93 @@ void setController(AB_Controllers* newControllers)
     [retController bind];
     retController.sourceString = sourceString;
     
+    [self addDebugLabelToView:retController.view withKey:key];
+    
+#if DEBUG_NUM_CONTROLLERS
+    controllerCount[key] = @([controllerCount[key] intValue] + 1);
+    NSLog(@"Current controller count:");
+    for (id k in [controllerCount allKeys])
+    {
+        id v = controllerCount[k];
+        NSLog(@"\t%@: %@", k, v);
+    }
+#endif
+    
+    if ([[retController class] shouldCache])
+    {
+        __weak AB_Controller weakController = retController;
+        __weak NSMutableDictionary* weakControllerPool = controllerPool;
+        [[[retController
+           rac_valuesAndChangesForKeyPath:@"open" options:NSKeyValueObservingOptionNew|NSKeyValueObservingOptionOld observer:self]
+          takeUntil:retController.rac_willDeallocSignal]
+         subscribeNext:^(RACTuple *value)
+         {
+             AB_Controller strongController = weakController;
+             NSMutableDictionary* strongControllerPool = weakControllerPool;
+             
+             if (!strongController || !strongControllerPool)
+             {
+                 return;
+             }
+             
+             NSDictionary* changes = value[1];
+             
+             NSNumber* old = changes[@"old"];
+             NSNumber* new = changes[@"new"];
+             if (old && new && [old isValid] && [new isValid])
+             {
+                 BOOL wasOpen = [old boolValue];
+                 BOOL isOpen = [new boolValue];
+                 if (wasOpen && !isOpen)
+                 {
+                     @synchronized(strongControllerPool)
+                     {
+                         NSMutableSet* pool = strongControllerPool[key];
+
+                         if (!pool)
+                         {
+                             pool = [NSMutableSet set];
+                             controllerPool[key] = pool;
+                         }
+                         
+                         [pool addObject:strongController];
+
+                     }
+                 }
+             }
+         }];
+    }
+
     return retController;
+}
+
+- (void) addDebugLabelToView:(UIView*)view withKey:(NSString*)key
+{
+    UILabel* debugLabel = [[UILabel alloc] init];
+    debugLabel.text = key;
+    debugLabel.numberOfLines = 0;
+    debugLabel.translatesAutoresizingMaskIntoConstraints = NO;
+    debugLabel.userInteractionEnabled = NO;
+    [view addSubview:debugLabel];
+    debugLabel.textColor = [UIColor redColor];
+    debugLabel.backgroundColor = [UIColor colorWithWhite:0.f alpha:0.5f];
+    
+    RAC(debugLabel, hidden) = [RACObserve(self, showDebugLabels) not];
+    
+    [view addConstraints:@[
+                           [NSLayoutConstraint constraintWithItem:debugLabel
+                                                        attribute:NSLayoutAttributeLeading
+                                                        relatedBy:NSLayoutRelationEqual
+                                                           toItem:view
+                                                        attribute:NSLayoutAttributeLeading
+                                                       multiplier:1.f constant:0.f],
+                           [NSLayoutConstraint constraintWithItem:debugLabel
+                                                        attribute:NSLayoutAttributeTop
+                                                        relatedBy:NSLayoutRelationEqual
+                                                           toItem:view
+                                                        attribute:NSLayoutAttributeTop
+                                                       multiplier:1.f constant:0.f],
+                           ]];
 }
 
 - (NSDictionary*) getControllers
@@ -177,18 +281,103 @@ void setController(AB_Controllers* newControllers)
     return -1;
 }
 
-- (void) returnControllerToPool:(AB_Controller)controller
+- (void) cleanPool
 {
-    id key = controller.key;
-    
-    NSMutableArray* pool = controllerPool[key];
-    if (!pool)
+    @synchronized(controllerPool)
     {
-        pool = [@[] mutableCopy];
-        controllerPool[key] = pool;
+        for (id controllerKey in [controllerPool allKeys])
+        {
+            if ([preloadControllers objectForKey:controllerKey])
+            {
+                continue;
+            }
+            
+            NSMutableSet* mutableSet = controllerPool[controllerKey];
+            if (mutableSet.count)
+            {
+                NSLog(@"Removing: %@", mutableSet);
+                [mutableSet removeAllObjects];
+            }
+        }
+    }
+}
+
+
+- (void) preloadControllers:(NSDictionary*)controllerPreloads
+{
+    @synchronized(controllerPool)
+    {
+        preloadControllers = controllerPreloads;
+        
+        
+        for (NSString* key in [preloadControllers allKeys])
+        {
+            NSNumber* preloadCountObject = [preloadControllers objectForKey:key];
+            int preloadCount = [preloadCountObject intValue];
+            
+            NSMutableSet* pool = controllerPool[key];
+            if (!pool)
+            {
+                pool = [NSMutableSet set];
+                controllerPool[key] = pool;
+            }
+
+            for (int i=0; i<preloadCount; i++)
+            {
+                [pool addObject:[self controllerForTag:key]];
+            }
+        }
+    }
+}
+
+- (void) checkForRetainCycles
+{
+    NSMutableDictionary* backupPool = controllerPool;
+    
+    @synchronized(backupPool)
+    {
+        controllerPool = nil;
+
+        NSDictionary* controllerDescriptions = [self getControllers];
+        for (NSString* k in [controllerDescriptions allKeys])
+        {
+            AB_Controller c = [self controllerForTag:k];
+            [[RACScheduler mainThreadScheduler] afterDelay:0.1f schedule:^
+             {
+                 __weak AB_Controller weakC = c;
+                 [[RACScheduler mainThreadScheduler] afterDelay:0.1f schedule:^
+                  {
+                      if (weakC)
+                      {
+                          NSLog(@"%@ has a retain cycle!", k);
+                      }
+                      else
+                      {
+                          NSLog(@"%@ DOES NOT have a retain cycle", k);
+                      }
+                  }];
+             }];
+        }
+        
+        controllerPool = backupPool;
+    }
+}
+
+- (BOOL) isInPool:(AB_Controller)controller
+{
+    @synchronized(controllerPool)
+    {
+        NSMutableSet* pool = controllerPool[controller.key];
+        if (pool.count > 0)
+        {
+            if ([pool containsObject:controller])
+            {
+                return YES;
+            }
+        }
     }
     
-    [pool addObject:controller];
+    return NO;
 }
 
 @end

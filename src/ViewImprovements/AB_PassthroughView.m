@@ -3,7 +3,6 @@
 //  Eastern
 //
 //  Created by phoebe on 7/2/15.
-//  Copyright (c) 2015 Eastern Taxi Company. All rights reserved.
 //
 
 #import "AB_PassthroughView.h"
@@ -16,7 +15,7 @@
     BOOL isPointInside = Underscore.array(self.subviews)
     .filter(^BOOL(UIView* subview)
             {
-                return subview.isUserInteractionEnabled;
+                return subview.isUserInteractionEnabled && !subview.hidden;
             })
     .any(^BOOL(UIView* subview)
          {
@@ -24,7 +23,9 @@
              return [subview pointInside:pointInView withEvent:event];
          });
     
-    return isPointInside;
+    return isPointInside
+    ? [super pointInside:point withEvent:event]
+    : NO;
 }
 
 @end
@@ -93,7 +94,7 @@
     BOOL isPointInside = Underscore.array(allViews)
     .filter(^BOOL(UIView* subview)
             {
-                return subview.isUserInteractionEnabled;
+                return subview.isUserInteractionEnabled && !subview.hidden;
             })
     .any(^BOOL(UIView* subview)
          {
@@ -103,7 +104,9 @@
              return pointInside;
          });
 
-    return isPointInside;
+    return isPointInside
+    ? [super pointInside:point withEvent:event]
+    : NO;
 }
 
 @end
@@ -115,7 +118,7 @@
     BOOL isPointInside = Underscore.array(self.contentView.subviews)
     .filter(^BOOL(UIView* subview)
             {
-                return subview.isUserInteractionEnabled;
+                return subview.isUserInteractionEnabled && !subview.hidden;
             })
     .any(^BOOL(UIView* subview)
          {
@@ -123,7 +126,9 @@
              return [subview pointInside:pointInView withEvent:event];
          });
     
-    return isPointInside;
+    return isPointInside
+    ? [super pointInside:point withEvent:event]
+    : NO;
 }
 
 @end

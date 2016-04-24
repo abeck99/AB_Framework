@@ -27,7 +27,7 @@ typedef void (^TransitionCompleteBlock)(AB_TransitionContextObject* contextObjec
     BOOL isCancelled;
 }
 
-@property(readonly) AB_Controller toController;
+@property(readonly, strong) AB_Controller toController;
 
 - (id) initWithFromController:(AB_Controller)_fromController
                  toController:(AB_Controller)_toController

@@ -35,10 +35,14 @@
 
 - (id<UIViewControllerAnimatedTransitioning>) crossFade
 {
-    CECrossfadeAnimationController* anim = [[CECrossfadeAnimationController alloc] init];
-    anim.duration = DEFAULT_ANIMATION_TIME;
-    return anim;
+    return [self crossFadeWithDuration:DEFAULT_ANIMATION_TIME];
 }
 
+- (id<UIViewControllerAnimatedTransitioning>) crossFadeWithDuration:(CGFloat)duration
+{
+    AB_FadeAnimation* anim = [[AB_FadeAnimation alloc] init];
+    anim.duration = duration;
+    return anim;
+}
 
 @end

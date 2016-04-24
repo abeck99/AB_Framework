@@ -80,6 +80,11 @@ CGRect CGRectFromComponents(CGSize point, CGSize size)
     return CGRectMake(point.width, point.height, size.width, size.height);
 }
 
+CGRect CGRectFromCenter(CGPoint point, CGSize size)
+{
+    return CGRectMake(point.x-(size.width/2.f), point.y-(size.height/2.f), size.width, size.height);
+}
+
 CGSize CGSizeXComponent(CGSize size)
 {
     return CGSizeMultiply(size, CGSizeMake(1.f, 0.f));

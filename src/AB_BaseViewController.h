@@ -21,6 +21,7 @@
     NSArray* sidebars;
 }
 
++ (BOOL) fitToView;
 - (NSString*) setScreenName;
 
 - (void) openInView:(UIView*)insideView
@@ -36,7 +37,7 @@
 - (IBAction) back:(id)sender;
 
 @property(readonly) BOOL open;
-@property(readonly) AB_Section sectionParent;
+@property(readonly, strong) AB_Section sectionParent;
 
 @property(readonly) CGFloat height;
 

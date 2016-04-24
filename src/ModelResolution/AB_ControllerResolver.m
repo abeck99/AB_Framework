@@ -14,7 +14,7 @@
 
 @interface AB_ControllerResolverContext: NSObject
 
-- (NSString*) getByModel:(AB_BaseModel*)model withDisplayType:(AB_DisplayType)displayType inContext:(NSString*)contextName;
+- (NSString*) getByModel:(AB_BaseModel*)model withDisplayType:(AB_DisplayType)displayType inContext:(NSArray*)contexts;
 - (void) setTag:(NSString*)tag forSize:(AB_DisplayType)displayType inContext:(NSString*)contextName withTestBlock:(TestControllerForModel)testBlock;
 
 @end
@@ -53,28 +53,50 @@
 
 - (AB_Controller) controllerForModel:(AB_BaseModel*)model
                      withDisplayType:(AB_DisplayType)displayType
-                           inContext:(NSString*)contextName
+                           inContext:(NSArray*)contexts
 {
     return
     [self
-     controllerForModel:model withDisplayType:displayType inContext:contextName source:nil];
+     controllerForModel:model withDisplayType:displayType inContext:contexts source:nil];
 }
 
 - (AB_Controller) controllerForModel:(AB_BaseModel*)model
                      withDisplayType:(AB_DisplayType)displayType
-                           inContext:(NSString*)contextName
+                           inContext:(NSArray*)contexts
                               source:(NSString*)sourceName
 {
+    return [self controllerForModel:model withDisplayType:displayType inContext:contexts source:sourceName delaySetup:NO];
+}
+
+- (AB_Controller) controllerForModel:(AB_BaseModel*)model
+                     withDisplayType:(AB_DisplayType)displayType
+                           inContext:(NSArray*)contexts
+                              source:(NSString*)sourceName
+                          delaySetup:(BOOL)delaySetup
+{
+    contexts = contexts ? contexts : @[];
+    
     AB_ControllerResolverContext* resolver = modelToControllerTag[[model class]];
     NSString* tag = [resolver
                      getByModel:model
                      withDisplayType:displayType
-                     inContext:contextName];
+                     inContext:contexts];
 
-    AB_Controllers* controllers = getController();
+    AB_Controllers* controllers = [AB_Controllers get];
     AB_Controller controller = [controllers controllerForTag:tag source:sourceName];
     
-    [self runPostCreate:controller model:model];
+    if (delaySetup)
+    {
+        [[NSOperationQueue mainQueue]
+         addOperationWithBlock:^
+         {
+             [self runPostCreate:controller model:model];
+         }];
+    }
+    else
+    {
+        [self runPostCreate:controller model:model];
+    }
     
     return controller;
 }
@@ -93,6 +115,8 @@
     {
         callbacks.createControllerBlock(controller, model);
     }
+    
+    
     
     [controller setCloseBlock:callbacks.closeControllerBlock];
 }
@@ -224,6 +248,17 @@
 
 @end
 
+// TODO: Make resolving into a score rather than a bool result, and allow controllers to set multiple context strings
+@interface AB_ResolveResult : NSObject
+
+@property(assign) int score;
+@property(strong) NSString* tag;
+
+@end
+
+@implementation AB_ResolveResult
+
+@end
 
 @implementation AB_ControllerResolverContext
 
@@ -236,13 +271,20 @@
     return self;
 }
 
-- (NSString*) getByModel:(AB_BaseModel*)model withDisplayType:(AB_DisplayType)displayType inContext:(NSString*)contextName
+- (NSString*) getByModel:(AB_BaseModel*)model withDisplayType:(AB_DisplayType)displayType inContext:(NSArray*)contexts
 {
     NSArray* validResolvables = Underscore.array(resolvables)
-    .filter(^BOOL(AB_ControllerResolverInstance* resolvable)
+    .map(^(AB_ControllerResolverInstance* resolvable)
     {
-      return [resolvable testModel:model withDisplayType:displayType inContext:contextName];
+        return Underscore.array(contexts)
+        .map(^(NSString* context)
+             {
+                 return [resolvable testModel:model withDisplayType:displayType inContext:context]
+                 ? resolvable : nil;
+             })
+        .unwrap;
     })
+    .flatten
     .unwrap;
 
     if (validResolvables.count == 0)

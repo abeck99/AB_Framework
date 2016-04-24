@@ -37,6 +37,16 @@
     closeBlock = setCloseBlock;
 }
 
+- (void) prepareForReuse
+{
+    CloseControllerBlock capturedCloseBlock = closeBlock;
+    closeBlock = nil;
+    if (capturedCloseBlock)
+    {
+        capturedCloseBlock(self);
+    }
+}
+
 + (NSMutableArray*) existingControllers
 {
     static dispatch_once_t pred;
@@ -56,12 +66,18 @@
 {
     if ( self = [super initWithNibName:nibNameOrNil bundle:nibBundleOrNil] )
     {
+        _open = NO;
         sidebars = @[];
         openSubject = [RACSubject subject];
         closeSubject = [RACSubject subject];
     }
     
     return self;
+}
+
++ (BOOL) fitToView
+{
+    return YES;
 }
 
 - (void)viewWillAppear:(BOOL)animated
@@ -93,13 +109,17 @@
 
 - (CGFloat) height
 {
-    
-    
     return heightDefiningView
     ? heightDefiningView.frame.size.height
     : self.view.frame.size.height;
 }
 
+- (CGFloat) width
+{
+    return heightDefiningView
+    ? heightDefiningView.frame.size.width
+    : self.view.frame.size.width;
+}
 //- (void) viewDidAppear:(BOOL)animated
 //{
 //    [super viewDidAppear:animated];
@@ -131,8 +151,9 @@
     NSLog(@"%p . Opening %@", self, self);
 #endif
     sectionParent = sectionParent_;
-    
-    [viewParent_ addChildViewController:self];
+//    NSLog(@"openInView withViewParent inSection...");
+
+//    [viewParent_ addChildViewController:self];
     
     UIView* topPopupView = (UIView*) [insideView popups].first;
     
@@ -166,21 +187,24 @@
         [insideView addSubview:self.view];
     }
 
-    [self didMoveToParentViewController:viewParent_];
+//    [self didMoveToParentViewController:viewParent_];
     
-    UIView* subview = self.view;
-    
-    [insideView addConstraints:[NSLayoutConstraint
-                                constraintsWithVisualFormat:@"H:|-0-[subview]-0-|"
-                                options:NSLayoutFormatDirectionLeadingToTrailing
-                                metrics:nil
-                                views:NSDictionaryOfVariableBindings(subview)]];
-    
-    [insideView addConstraints:[NSLayoutConstraint
-                                constraintsWithVisualFormat:@"V:|-0-[subview]-0-|"
-                                options:NSLayoutFormatDirectionLeadingToTrailing
-                                metrics:nil
-                                views:NSDictionaryOfVariableBindings(subview)]];
+    if ([[self class] fitToView])
+    {
+        UIView* subview = self.view;
+        
+        [insideView addConstraints:[NSLayoutConstraint
+                                    constraintsWithVisualFormat:@"H:|-0-[subview]-0-|"
+                                    options:NSLayoutFormatDirectionLeadingToTrailing
+                                    metrics:nil
+                                    views:NSDictionaryOfVariableBindings(subview)]];
+        
+        [insideView addConstraints:[NSLayoutConstraint
+                                    constraintsWithVisualFormat:@"V:|-0-[subview]-0-|"
+                                    options:NSLayoutFormatDirectionLeadingToTrailing
+                                    metrics:nil
+                                    views:NSDictionaryOfVariableBindings(subview)]];
+    }
 
 //    [insideView updateConstraints];
 //    
@@ -192,6 +216,11 @@
     
     [self setOpen:YES];
     [openSubject sendNext:self];
+}
+
++ (BOOL) shouldCache
+{
+    return YES;
 }
 
 - (void) bind
@@ -238,28 +267,16 @@
 //    NSLog(@"+ %lu", (unsigned long)existingControllers.count);
 //    [self showExistingControllers];
 
-    [self willMoveToParentViewController:nil];
+//    [self willMoveToParentViewController:nil];
     [self.view removeFromSuperview];
-    [self removeFromParentViewController];
+//    [self removeFromParentViewController];
     
-    [self setOpen:NO];
     sectionParent = nil;
     
     [closeSubject sendNext:self];
     
-    CloseControllerBlock capturedCloseBlock = closeBlock;
-    closeBlock = nil;
-    if (capturedCloseBlock)
-    {
-        capturedCloseBlock(self);
-    }
-    
-    [self returnToControllerPool];
-}
-
-- (void) returnToControllerPool
-{
-    [getController() returnControllerToPool:self];
+    [self prepareForReuse];
+    [self setOpen:NO];
 }
 
 - (void) dealloc
@@ -293,7 +310,6 @@
 - (UIImage*) image:(UIImage*)image tintedWithColor:(UIColor*)tintColor
 {
     CGSize imagesize = image.size;
-    
     
     UIGraphicsBeginImageContextWithOptions(imagesize, NO, 0.f);
     CGRect rect = CGRectMake(0, 0, imagesize.width, imagesize.height);
@@ -333,7 +349,7 @@
 
 - (id<AB_SideBarProtocol>) addSidebar:(id)name
 {
-    AB_Controller sectionController = [getController() controllerForTag:name];
+    AB_Controller sectionController = [[AB_Controllers get] controllerForTag:name];
     
     // TODO: Prevent multiple side bars of the same name?
     if ([[sectionController class] conformsToProtocol:@protocol(AB_SideBarProtocol)])
@@ -410,8 +426,14 @@
 - (void) allowChangeController:(ConfirmBlock)confirmBlock
                   toController:(AB_Controller)newController
 {
-    confirmBlock(![self.key isEqual:newController.key]);
+    confirmBlock(YES);//![self.key isEqual:newController.key]);
 }
+
+- (void) allowPopController:(ConfirmBlock)confirmBlock
+{
+    confirmBlock(YES);
+}
+
 
 - (NSDictionary*) getDescription
 {

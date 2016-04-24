@@ -104,7 +104,7 @@
         
         [tableView beginUpdates];
         [tableView reloadRowsAtIndexPaths:[NSArray arrayWithArray:mutableIndexPaths]
-                         withRowAnimation:UITableViewRowAnimationAutomatic];
+                         withRowAnimation:UITableViewRowAnimationFade];
         [tableView endUpdates];
     }
     [self scrollViewDidScroll:tableView];
@@ -129,6 +129,14 @@
 
 - (void) clearSections
 {
+    if (sections)
+    {
+        for (AB_SectionInfo* section in sections)
+        {
+            [section.headerController closeView];
+        }
+    }
+
     sections = @[];
 }
 
@@ -141,6 +149,11 @@
     if ( tableView.dataSource == self )
     {
         tableView.dataSource = nil;
+    }
+    
+    for (AB_SectionInfo* section in sections)
+    {
+        [section.headerController closeView];
     }
 }
 
@@ -157,6 +170,7 @@
     {
         NSMutableArray* mutableSections = [sections mutableCopy];
         [mutableSections removeObject:section];
+        [section.headerController closeView];
         sections = [NSArray arrayWithArray:mutableSections];
     }
 }
@@ -237,7 +251,11 @@
             [section.headerController openInView:view
                                   withViewParent:section.headerControllerParent
                                        inSection:nil];
-            
+
+            CGRect viewFrame = section.headerController.view.frame;
+            viewFrame.size.height = section.headerController.height;
+            section.headerController.view.frame = viewFrame;
+
             [mutableOpenHeaderControllers addObject:section.headerController];
         }
         else
@@ -412,9 +430,11 @@
         
         if ( !cell )
         {
-            UINib* nib = [[self class] multiNib];
-            cell = [nib instantiateWithOwner:nil options:@{}][0];
-            [cell setValue:reuseID forKey:@"reuseIdentifier"];
+            cell = [[AB_MultiTableViewCell alloc] initWithStyle:UITableViewCellStyleDefault reuseIdentifier:reuseID];
+
+//            UINib* nib = [[self class] multiNib];
+//            cell = [nib instantiateWithOwner:nil options:@{}][0];
+//            [cell setValue:reuseID forKey:@"reuseIdentifier"];
         }
         
         CGRect cellRect = cell.frame;
@@ -425,6 +445,7 @@
         multiCell.nib = nibs[section.sectionType];
         multiCell.emptyNib = emptyNibs[section.sectionType];
         multiCell.retainInnerCellSize = section.retainMultiCellSize;
+        multiCell.cellSpacing = section.cellSpacing;
 
         NSArray* groupedArray = [multiCell groupArray:section.items.array groupSize:section.numCellsPerRow enforceSize:section.equalSizeColumns];
         
@@ -486,11 +507,14 @@
     return updateSubject;
 }
 
+//- (NSInteger)numberOfSectionsInTableView:(UITableView *)tableView
+//- (NSInteger)numberOfRowsInSection:(NSInteger)section
+
 - (CGFloat) expectedHeight
 {
     CGFloat height = 0.f;
 
-    for (NSInteger sectionNum=0; sectionNum<sections.count; ++sectionNum)
+    for (NSInteger sectionNum=0; sectionNum<[self numberOfSectionsInTableView:self.tableView]; ++sectionNum)
     {
         CGFloat heightToAdd = [self tableView:self.tableView heightForHeaderInSection:sectionNum];
         if (heightToAdd > 0.f)
@@ -501,7 +525,7 @@
         height += heightToAdd;
 
         AB_SectionInfo* section = sections[sectionNum];
-        for (NSInteger rowNum=0; rowNum<section.items.array.count; ++rowNum)
+        for (NSInteger rowNum=0; rowNum<[self numberOfRowsInSection:sectionNum]; ++rowNum)
         {
             NSIndexPath* indexPath = [NSIndexPath indexPathForRow:rowNum inSection:sectionNum];
             
@@ -521,6 +545,25 @@
     return height;
 }
 
+- (NSArray*) visibleCells
+{
+    NSMutableArray* retCells = [@[] mutableCopy];
+    for (id x in [self.tableView visibleCells])
+    {
+        if ([x isKindOfClass:[AB_MultiTableViewCell class]])
+        {
+            for (id y in [((AB_MultiTableViewCell*)x) innerCells])
+            {
+                [retCells addObject:y];
+            }
+        }
+        else
+        {
+            [retCells addObject:x];
+        }
+    }
+    return [NSArray arrayWithArray:retCells];
+}
 
 @end
 

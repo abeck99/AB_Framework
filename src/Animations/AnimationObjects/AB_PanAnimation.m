@@ -77,8 +77,8 @@
          NSString* springScaleAnimation = [NSString stringWithFormat:@"springScaleAnimation:%lu", (unsigned long)counter];
         
         [[RACSignal merge:@[
-                           [AB_PanAnimation performAnimation:fromAnimation onView:fromView forKey:fromAnimationPositionKey],
-                           [AB_PanAnimation performAnimation:toAnimation onView:toView forKey:toAnimationPosition],
+                           [AB_PanAnimation performAnimation:fromAnimation onItem:fromView.layer forKey:fromAnimationPositionKey],
+                           [AB_PanAnimation performAnimation:toAnimation onItem:toView.layer forKey:toAnimationPosition],
                            ]]
          subscribeError:^(NSError* err)
          {
@@ -98,7 +98,7 @@
      }];
 }
 
-+ (RACSignal*) performAnimation:(POPAnimation*)anim onView:(UIView*)view forKey:(NSString*)animKey
++ (RACSignal*) performAnimation:(POPAnimation*)anim onItem:(id)item forKey:(NSString*)animKey
 {
     return
     [RACSignal createSignal:^RACDisposable*(id<RACSubscriber>subscriber)
@@ -115,8 +115,66 @@
              }
          };
          
-         [view.layer pop_addAnimation:anim forKey:animKey];
+         [item pop_addAnimation:anim forKey:animKey];
          return nil;
+     }];
+}
+
+@end
+
+@implementation AB_FadeAnimation
+
+- (NSTimeInterval)transitionDuration:(id<UIViewControllerContextTransitioning>)transitionContext
+{
+    return self.duration;
+}
+
+- (void)animateTransition:(id<UIViewControllerContextTransitioning>)transitionContext
+{
+    UIViewController *fromVC = [transitionContext viewControllerForKey:UITransitionContextFromViewControllerKey];
+    UIViewController *toVC = [transitionContext viewControllerForKey:UITransitionContextToViewControllerKey];
+    UIView *toView = toVC.view;
+    UIView *fromView = fromVC.view;
+    
+    [self animateTransition:transitionContext fromVC:fromVC toVC:toVC fromView:fromView toView:toView];
+}
+
+- (void)animateTransition:(id<UIViewControllerContextTransitioning>)transitionContext fromVC:(UIViewController *)fromVC toVC:(UIViewController *)toVC fromView:(UIView *)fromView toView:(UIView *)toView
+{
+    toView.hidden = YES;
+    
+    [[RACScheduler mainThreadScheduler] after:[[NSDate date] dateByAddingTimeInterval:0.01f] schedule:^
+     {
+         toView.hidden = NO;
+         
+         NSTimeInterval duration = [self transitionDuration:transitionContext];
+         
+         POPBasicAnimation* fromAnimation = [POPBasicAnimation animationWithPropertyNamed:kPOPViewAlpha];
+         fromAnimation.duration = duration;
+         fromAnimation.timingFunction = [CAMediaTimingFunction functionWithName:kCAMediaTimingFunctionEaseInEaseOut];
+         fromAnimation.fromValue = @(1.0);
+         fromAnimation.toValue = @(0.0);
+
+         POPBasicAnimation* toAnimation = [POPBasicAnimation animationWithPropertyNamed:kPOPViewAlpha];
+         toAnimation.duration = duration;
+         toAnimation.timingFunction = [CAMediaTimingFunction functionWithName:kCAMediaTimingFunctionEaseInEaseOut];
+         toAnimation.fromValue = @(0.0);
+         toAnimation.toValue = @(1.0);
+
+         [[RACSignal merge:@[
+                             [AB_PanAnimation performAnimation:fromAnimation onItem:fromView forKey:@"fadeIn"],
+                             [AB_PanAnimation performAnimation:toAnimation onItem:toView forKey:@"fadeOut"],
+                             ]]
+          subscribeError:^(NSError* err)
+          {
+              [toView removeFromSuperview];
+              [transitionContext completeTransition:NO];
+          }
+          completed:^
+          {
+              [fromView removeFromSuperview];
+              [transitionContext completeTransition:YES];
+          }];
      }];
 }
 

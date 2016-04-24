@@ -16,7 +16,6 @@ typedef NS_OPTIONS(NSUInteger, AB_DisplayType) {
     DisplayType_Cell             = (1 << 2),
     DisplayType_SectionHeader    = (1 << 3),
     DisplayType_AnnotationView   = (1 << 4),
-    DisplayType_EnumSize         = (1 << 5),
     
     
     DisplayType_All =
@@ -29,15 +28,21 @@ typedef NS_OPTIONS(NSUInteger, AB_DisplayType) {
 
 + (AB_ControllerResolver*) get;
 
+- (AB_Controller) controllerForModel:(AB_BaseModel*)model
+                     withDisplayType:(AB_DisplayType)displayType
+                           inContext:(NSArray*)contexts
+                              source:(NSString*)sourceName
+                          delaySetup:(BOOL)delaySetup;
+
 
 - (AB_Controller) controllerForModel:(AB_BaseModel*)model
                      withDisplayType:(AB_DisplayType)displayType
-                           inContext:(NSString*)contextName
+                           inContext:(NSArray*)contexts
                               source:(NSString*)sourceName;
 
 - (AB_Controller) controllerForModel:(AB_BaseModel*)model
                      withDisplayType:(AB_DisplayType)displayType
-                           inContext:(NSString*)contextName;
+                           inContext:(NSArray*)contexts;
 
 - (void) registerController:(NSString*)tag
               forModelClass:(Class)modelClass
@@ -76,10 +81,38 @@ registerControllerCallbacks:[controllerClass class] \
 forModelClass:[modelClass class] \
 withCallback:^(controllerClass* controller, modelClass* propertyName) \
 { \
+if (controller.propertyName && propertyName && [controller.propertyName isEqual:propertyName]) \
+{ \
+return; \
+} \
 controller.propertyName = propertyName; \
 } \
 closeCallback:^(controllerClass* controller) \
 { \
  /*controller.propertyName = nil;*/ \
+}];
+
+#define REGISTER_DEFAULT_CALLBACKS_WITH_ROLLBACK(controllerClass, modelClass, propertyName) [[AB_ControllerResolver get] \
+registerControllerCallbacks:[controllerClass class] \
+forModelClass:[modelClass class] \
+withCallback:^(controllerClass* controller, modelClass* propertyName) \
+{ \
+controller.propertyName = propertyName; \
+} \
+closeCallback:^(controllerClass* controller) \
+{ \
+controller.propertyName = nil; \
+}];
+
+#define REGISTER_DEFAULT_CALLBACKS_ALLOW_RETRIGGER(controllerClass, modelClass, propertyName) [[AB_ControllerResolver get] \
+registerControllerCallbacks:[controllerClass class] \
+forModelClass:[modelClass class] \
+withCallback:^(controllerClass* controller, modelClass* propertyName) \
+{ \
+controller.propertyName = propertyName; \
+} \
+closeCallback:^(controllerClass* controller) \
+{ \
+/*controller.propertyName = nil;*/ \
 }];
 

@@ -32,4 +32,7 @@
 
 #define MAP_STRING(valueName) + (NSValueTransformer*)valueName ## JSONTransformer { return [MTLValueTransformer transformerUsingForwardBlock:^(NSString* str, BOOL* success, NSError** error) { return str ? [NSString stringWithFormat:@"%@", str] : nil; } reverseBlock:^(NSString* str, BOOL* success, NSError** error) { return str; }]; }
 
+
+#define MAP_STRING_ARRAY(valueName) + (NSValueTransformer*)valueName ## JSONTransformer { return [MTLValueTransformer transformerUsingForwardBlock:^(NSArray* stringArray, BOOL* success, NSError** error) { return Underscore.array(stringArray).map(^(id obj){ return [NSString stringWithFormat:@"%@", obj]; }).unwrap; } reverseBlock:^(NSArray* stringArray, BOOL* success, NSError** error) { return stringArray; }]; }
+
 #define MAP_LOCATION(valueName, latName, lngName) + (NSValueTransformer*)valueName ## JSONTransformer { return [MTLValueTransformer transformerUsingForwardBlock:^id(NSDictionary* latLng, BOOL* success, NSError** err) { NSString* lat = latLng[@latName]; NSString* lng = latLng[@lngName]; if (lat.length == 0 || lng.length == 0) { return nil; } return [[AB_ComparableLocation alloc] initWithLatitude:[lat doubleValue] longitude:[lng doubleValue]]; } reverseBlock:^id(CLLocation* location, BOOL* success, NSError** err) { if (!location) { return @{}; } return @{ @latName: [@(location.coordinate.latitude) toFloatString], @lngName: [@(location.coordinate.longitude) toFloatString], }; }]; }

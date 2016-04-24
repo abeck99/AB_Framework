@@ -66,7 +66,7 @@
 {
     [self expandScrollContentTo:controllers.count + 1];
     
-    AB_Controller page = [getController() controllerForTag:controllerName];
+    AB_Controller page = [[AB_Controllers get] controllerForTag:controllerName];
     
     CGRect newPageFrame = scrollView.bounds;
     newPageFrame.origin.x = index * scrollView.bounds.size.width;

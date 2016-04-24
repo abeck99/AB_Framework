@@ -68,8 +68,8 @@
 
 - (void) momentOfOverlapInView:(UIView*)parentView;
 
-@property(readonly) UIView* contentView;
-@property(readonly) AB_Controller currentController;
+@property(readonly, strong) UIView* contentView;
+@property(readonly, strong) AB_Controller currentController;
 
 - (void) clearBackHistory;
 

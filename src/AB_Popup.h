@@ -33,6 +33,8 @@ typedef enum PopupState
 // TODO: Unit test
 @interface AB_Popup : UIView
 {
+    IBOutlet UIView* heightReferenceView;
+
     IBOutletCollection(UITextView) NSArray* expandableTextViews;
     IBOutletCollection(UIView) NSArray* roundedViews;
     
@@ -53,8 +55,10 @@ typedef enum PopupState
 @property(weak) UIViewController* viewController;
 @property(strong) IBInspectable UIColor* blockingViewColor;
 @property(assign) IBInspectable int revealDirection;
+@property(assign) IBInspectable BOOL blurBackground;
+@property(assign) IBInspectable BOOL fillScreen;
 
-@property(readonly) RACSignal* stateSignal;
+@property(readonly, strong) RACSignal* stateSignal;
 
 @end
 
@@ -71,6 +75,8 @@ typedef enum PopupState
 - (void) closeAllPopupsOfType:(Class)popupClass;
 - (void) closeAllPopupsExcept:(NSArray*)popupClasses;
 - (void) closeAllPopupsOfTypes:(NSArray*)popupClasses;
+
+- (NSArray*) popupsOfType:(Class)popupClass;
 
 @end
 
